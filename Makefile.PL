@@ -58,6 +58,9 @@ WriteMakefile(
 			    DIST_DEFAULT => 'all tardist',
 			   },
  
-	'clean'   	=> {FILES => join(" ", qw(*% *.html *.bak *.old lib/*% lib/*/*%),values %PL_FILES)},
+	'clean'   	=> {FILES => join(" ",
+					map { "$_ */$_ */*/$_" }
+					qw(*% *.html *.b[ac]k *.old *.orig))
+			   },
 	'macro'		=> { INSTALLDIRS => 'perl' },
 );

@@ -35,21 +35,18 @@ corresponding built-in functions:
 
 L<perlfunc>, 
 L<perlop/"I/O Operators">,
-L<"IO::Handle">
-L<"IO::File">
+L<IO::Handle>
+L<IO::File>
 
 =head1 HISTORY
 
-Derived from FileHandle.pm by Graham Barr <bodg@tiuk.ti.com>
-
-=head1 REVISION
-
-$Revision: 1.5 $
+Derived from FileHandle.pm by Graham Barr E<lt>bodg@tiuk.ti.comE<gt>
 
 =cut
 
 require 5.000;
 use Carp;
+use strict;
 use vars qw($VERSION @EXPORT @ISA);
 use IO::Handle qw(SEEK_SET SEEK_CUR SEEK_END);
 require Exporter;
@@ -57,7 +54,7 @@ require Exporter;
 @EXPORT = qw(SEEK_SET SEEK_CUR SEEK_END);
 @ISA = qw(Exporter);
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/);
+$VERSION = "1.06";
 
 sub clearerr {
     @_ == 1 or croak 'usage: $fh->clearerr()';

@@ -43,7 +43,7 @@ IO::File - supply object methods for filehandles
 
 =head1 DESCRIPTION
 
-C<IO::File> is inherits from C<IO::Handle> ans C<IO::Seekable>. It extends
+C<IO::File> inherits from C<IO::Handle> and C<IO::Seekable>. It extends
 these classes with methods that are specific to file handles.
 
 =head1 CONSTRUCTOR
@@ -70,7 +70,7 @@ parameters, the first parameter is a filename that may include
 whitespace or other special characters, and the second parameter is
 the open mode, optionally followed by a file permission value.
 
-If C<IO::File::open> receives a Perl mode string (">", "+<", etc.)
+If C<IO::File::open> receives a Perl mode string ("E<gt>", "+E<lt>", etc.)
 or a POSIX fopen() mode string ("w", "r+", etc.), it uses the basic
 Perl C<open> operator.
 
@@ -86,24 +86,20 @@ this may fail, but the rest of IO::File will still work.
 
 L<perlfunc>, 
 L<perlop/"I/O Operators">,
-L<"IO::Handle">
-L<"IO::Seekable">
+L<IO::Handle>
+L<IO::Seekable>
 
 =head1 HISTORY
 
-Derived from FileHandle.pm by Graham Barr <bodg@tiuk.ti.com>
-
-=head1 REVISION
-
-$Revision: 1.5 $
+Derived from FileHandle.pm by Graham Barr E<lt>F<bodg@tiuk.ti.com>E<gt>.
 
 =cut
 
 require 5.000;
-use vars qw($VERSION @EXPORT @EXPORT_OK $AUTOLOAD);
+use strict;
+use vars qw($VERSION @EXPORT @EXPORT_OK $AUTOLOAD @ISA);
 use Carp;
 use Symbol;
-use English;
 use SelectSaver;
 use IO::Handle qw(_open_mode_string);
 use IO::Seekable;
@@ -113,24 +109,24 @@ require DynaLoader;
 
 @ISA = qw(IO::Handle IO::Seekable Exporter DynaLoader);
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/);
+$VERSION = "1.06";
 
 @EXPORT = @IO::Seekable::EXPORT;
-
-################################################
-## If the Fcntl extension is available,
-##  export its constants.
-##
 
 sub import {
     my $pkg = shift;
     my $callpkg = caller;
-    Exporter::export $pkg, $callpkg;
+    Exporter::export $pkg, $callpkg, @_;
+
+    #
+    # If the Fcntl extension is available,
+    #  export its constants for sysopen().
+    #
     eval {
 	require Fcntl;
-	Exporter::export 'Fcntl', $callpkg;
+	Exporter::export 'Fcntl', $callpkg, '/^O_/';
     };
-};
+}
 
 
 ################################################

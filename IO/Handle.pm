@@ -1,5 +1,3 @@
-#
-
 package IO::Handle;
 
 =head1 NAME
@@ -143,6 +141,19 @@ Returns true if the object is currently a valid file descriptor.
 
 =back
 
+Lastly, a special method for working under B<-T> and setuid/gid scripts:
+
+=over
+
+=item $fh->untaint
+
+Marks the object as taint-clean, and as such data read from it will also
+be considered taint-clean. Note that this is a very trusting action to
+take, and appropriate consideration for the data source and potential
+vulnerability should be kept in mind.
+
+=back
+
 =head1 NOTE
 
 A C<IO::Handle> object is a GLOB reference. Some modules that
@@ -156,7 +167,7 @@ module keeps a C<timeout> variable in 'io_socket_timeout'.
 
 L<perlfunc>, 
 L<perlop/"I/O Operators">,
-L<POSIX/"FileHandle">
+L<FileHandle>
 
 =head1 BUGS
 
@@ -167,12 +178,13 @@ class from C<IO::Handle> and inherit those methods.
 
 =head1 HISTORY
 
-Derived from FileHandle.pm by Graham Barr <bodg@tiuk.ti.com>
+Derived from FileHandle.pm by Graham Barr E<lt>F<bodg@tiuk.ti.com>E<gt>
 
 =cut
 
 require 5.000;
-use vars qw($RCS $VERSION @EXPORT_OK $AUTOLOAD);
+use strict;
+use vars qw($VERSION @EXPORT_OK $AUTOLOAD @ISA);
 use Carp;
 use Symbol;
 use SelectSaver;
@@ -180,13 +192,7 @@ use SelectSaver;
 require Exporter;
 @ISA = qw(Exporter);
 
-##
-## TEMPORARY workaround as perl expects handles to be <FileHandle> objects
-##
-@FileHandle::ISA = qw(IO::Handle);
-
-$VERSION = "1.12";
-$RCS = sprintf("%s", q$Revision: 1.15 $ =~ /([\d\.]+)/);
+$VERSION = "1.14";
 
 @EXPORT_OK = qw(
     autoflush
@@ -236,6 +242,7 @@ sub AUTOLOAD {
     $constname =~ s/.*:://;
     my $val = constant($constname);
     defined $val or croak "$constname is not a valid IO::Handle macro";
+    no strict 'refs';
     *$AUTOLOAD = sub { $val };
     goto &$AUTOLOAD;
 }
@@ -256,6 +263,7 @@ sub new_from_fd {
     my $class = ref($_[0]) || $_[0] || "IO::Handle";
     @_ == 3 or croak "usage: new_from_fd $class FD, MODE";
     my $fh = gensym;
+    shift;
     IO::Handle::fdopen($fh, @_)
 	or return undef;
     bless $fh, $class;
@@ -408,7 +416,7 @@ sub write {
 
 sub syswrite {
     @_ == 3 || @_ == 4 or croak '$fh->syswrite(BUF, LEN [, OFFSET])';
-    sysread($_[0], $_[1], $_[2], $_[3] || 0);
+    syswrite($_[0], $_[1], $_[2], $_[3] || 0);
 }
 
 sub stat {
