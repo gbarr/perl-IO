@@ -1,8 +1,7 @@
 /*
  * Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
- * This program is free software; You may modify this code for your own use
- * but may only be re-distributed in an unaltered form and with prior consent
- * of the copyright owner.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the same terms as Perl itself.
  */
 
 #include "EXTERN.h"
@@ -55,6 +54,7 @@ char *s;
     return -1;
 }
 
+#ifndef newCONSTSUB
 /*
  * Define an XSUB that returns a constant scalar. The resulting structure is
  * identical to that created by the parser when it parses code like :
@@ -98,6 +98,7 @@ newCONSTSUB(stash,name,sv)
     curstash = old_curstash;
     curcop->cop_line = oldline;
 }
+#endif
 
 #ifndef PerlIO
 #define PerlIO_fileno(f) fileno(f)
@@ -108,13 +109,18 @@ io_blocking(f,block)
 InputStream f;
 int block;
 {
+    int RETVAL;
+    if(!f) {
+	errno = EBADF;
+	return -1;
+    }
 #if defined(HAS_FCNTL)
-    int RETVAL = fcntl(PerlIO_fileno(f), F_GETFL, 0);
+    RETVAL = fcntl(PerlIO_fileno(f), F_GETFL, 0);
     if (RETVAL >= 0) {
 	int mode = RETVAL;
 #ifdef O_NONBLOCK
 	/* POSIX style */ 
-#ifdef O_NDELAY
+#if defined(O_NDELAY) && O_NDELAY != O_NONBLOCK
 	/* Ooops has O_NDELAY too - make sure we don't 
 	 * get SysV behaviour by mistake
 	 */

@@ -21,7 +21,7 @@ BEGIN {
 }
 
 $| = 1;
-print "1..11\n";
+print "1..14\n";
 
 use IO::Socket;
 
@@ -78,9 +78,10 @@ $port = $listen->sockport;
 if($pid = fork()) {
   SERVER_LOOP:
     while (1) {
-       $sock = $listen->accept;
+       last SERVER_LOOP unless $sock = $listen->accept;
        while (<$sock>) {
            last SERVER_LOOP if /^quit/;
+           last if /^done/;
            print;
        }
        $sock = undef;
@@ -90,24 +91,48 @@ if($pid = fork()) {
     # child, try various ways to connect
     $sock = IO::Socket::INET->new("localhost:$port");
     if ($sock) {
-       $sock->print("ok 6\n");
+	print "not " unless $sock->connected;
+	print "ok 6\n";
+       $sock->print("ok 7\n");
        sleep(1);
-       print "ok 7\n";
-       $sock->print("ok 8\n");
+       print "ok 8\n";
+       $sock->print("ok 9\n");
+       $sock->print("done\n");
+       $sock->close;
     }
+    else {
+	print "# $@\n";
+	print "not ok 6\n";
+	print "not ok 7\n";
+	print "not ok 8\n";
+	print "not ok 9\n";
+    }
+
+    # some machines seem to suffer from a race condition here
+#    sleep(1);
 
     $sock = IO::Socket::INET->new("127.0.0.1:$port");
     if ($sock) {
-       $sock->print("ok 9\n");
+       $sock->print("ok 10\n");
+       $sock->print("done\n");
+       $sock->close;
     }
+    else {
+	print "# $@\n";
+	print "not ok 10\n";
+    }
+
+    # some machines seem to suffer from a race condition here
+#    sleep(1);
 
     $sock = IO::Socket->new(Domain => AF_INET,
                             PeerAddr => "localhost:$port");
     if ($sock) {
-       $sock->print("ok 10\n");
+       $sock->print("ok 11\n");
        $sock->print("quit\n");
     }
     $sock = undef;
+    sleep(1);
     exit;
 } else {
     die;
@@ -115,8 +140,8 @@ if($pid = fork()) {
 
 # Then test UDP sockets
 $server = IO::Socket->new(Domain => AF_INET,
-                         Proto  => 'udp',
-                         LocalAddr => 'localhost');
+                          Proto  => 'udp',
+                          LocalAddr => 'localhost');
 $port = $server->sockport;
 
 if ($pid = fork()) {
@@ -127,10 +152,17 @@ if ($pid = fork()) {
     #child
     $sock = IO::Socket::INET->new(Proto => 'udp',
                                   PeerAddr => "localhost:$port");
-    $sock->send("ok 11\n");
+    $sock->send("ok 12\n");
     sleep(1);
-    $sock->send("ok 11\n");  # send another one to be sure
+    $sock->send("ok 12\n");  # send another one to be sure
     exit;
 } else {
     die;
 }
+
+print "not " unless $server->blocking;
+print "ok 13\n";
+
+$server->blocking(0);
+print "not " if $server->blocking;
+print "ok 14\n";

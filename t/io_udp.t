@@ -21,8 +21,16 @@ BEGIN {
     }
 }
 
+sub compare_addr {
+    my $a = shift;
+    my $b = shift;
+    my @a = unpack_sockaddr_in($a);
+    my @b = unpack_sockaddr_in($b);
+    "$a[0]$a[1]" eq "$b[0]$b[1]";
+}
+
 $| = 1;
-print "1..4\n";
+print "1..7\n";
 
 use Socket;
 use IO::Socket qw(AF_INET SOCK_DGRAM INADDR_ANY);
@@ -37,10 +45,25 @@ $udpb = IO::Socket::INET->new(Proto => 'udp', LocalAddr => 'localhost')
 
 print "ok 2\n";
 
-$udpa->send("ok 3\n",0,$udpb->sockname);
-$udpb->recv($buf="",5);
+$udpa->send("ok 4\n",0,$udpb->sockname);
+
+print "not " unless compare_addr($udpa->peername,$udpb->sockname);
+print "ok 3\n";
+
+my $where = $udpb->recv($buf="",5);
 print $buf;
 
-$udpb->send("ok 4\n");
+my @xtra = ();
+
+unless(compare_addr($where,$udpa->sockname)) {
+    print "not ";
+    @xtra = (0,$udpa->sockname);
+}
+print "ok 5\n";
+
+$udpb->send("ok 6\n",@xtra);
 $udpa->recv($buf="",5);
 print $buf;
+
+print "not " if $udpa->connected;
+print "ok 7\n";

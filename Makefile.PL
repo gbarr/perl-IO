@@ -68,7 +68,7 @@ WriteMakefile(
 	DEFINE		=> $define,
 	'dist'    	=> {COMPRESS => 'gzip -9f',
 			    SUFFIX   => 'gz', 
-			    DIST_DEFAULT => 'all tardist',
+			    DIST_DEFAULT => 'tardist',
 			   },
  
 	'clean'   	=> {FILES => join(" ",

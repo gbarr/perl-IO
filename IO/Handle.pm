@@ -36,9 +36,7 @@ in the IO hierarchy.
 
 If you are reading this documentation, looking for a replacement for
 the C<FileHandle> package, then I suggest you read the documentation
-for C<IO::File>
-
-A C<IO::Handle> object is a reference to a symbol (see the C<Symbol> package)
+for C<IO::File> too.
 
 =head1 CONSTRUCTOR
 
@@ -63,34 +61,42 @@ See L<perlfunc> for complete descriptions of each of the following
 supported C<IO::Handle> methods, which are just front ends for the
 corresponding built-in functions:
 
-    close
-    fileno
-    getc
-    eof
-    read
-    truncate
-    stat
-    print
-    printf
-    sysread
-    syswrite
+    $io->close
+    $io->eof
+    $io->fileno
+    $io->format_write( [FORMAT_NAME] )
+    $io->getc
+    $io->read ( BUF, LEN, [OFFSET] )
+    $io->print ( ARGS )
+    $io->printf ( FMT, [ARGS] )
+    $io->stat
+    $io->sysread ( BUF, LEN, [OFFSET] )
+    $io->syswrite ( BUF, LEN, [OFFSET] )
+    $io->truncate ( LEN )
 
 See L<perlvar> for complete descriptions of each of the following
-supported C<IO::Handle> methods:
+supported C<IO::Handle> methods.  All of them return the previous
+value of the attribute and takes an optional single argument that when
+given will set the value.  If no argument is given the previous value
+is unchanged (except for $io->autoflush will actually turn ON
+autoflush by default).
 
-    autoflush
-    output_field_separator
-    output_record_separator
-    input_record_separator
-    input_line_number
-    format_page_number
-    format_lines_per_page
-    format_lines_left
-    format_name
-    format_top_name
-    format_line_break_characters
-    format_formfeed
-    format_write
+    $io->autoflush ( [BOOL] )                         $|
+    $io->format_page_number( [NUM] )                  $%
+    $io->format_lines_per_page( [NUM] )               $=
+    $io->format_lines_left( [NUM] )                   $-
+    $io->format_name( [STR] )                         $~
+    $io->format_top_name( [STR] )                     $^
+    $io->input_line_number( [NUM])                    $.
+
+The following methods are not supported on a per-filehandle basis.
+
+    IO::Handle->format_line_break_characters( [STR] ) $:
+    IO::Handle->format_formfeed( [STR])               $^L
+    IO::Handle->output_field_separator( [STR] )       $,
+    IO::Handle->output_record_separator( [STR] )      $\
+
+    IO::Handle->input_record_separator( [STR] )       $/
 
 Furthermore, for doing normal I/O you might need these:
 
@@ -121,9 +127,10 @@ It will also croak() if accidentally called in a scalar context.
 =item $io->ungetc ( ORD )
 
 Pushes a character with the given ordinal value back onto the given
-handle's input stream.
+handle's input stream.  Only one character of pushback per handle is
+guaranteed.
 
-=item $io->write ( BUF, LEN [, OFFSET }\] )
+=item $io->write ( BUF, LEN [, OFFSET ] )
 
 This C<write> is like C<write> found in C, that is it is the
 opposite of read. The wrapper for the perl C<write> function is
@@ -198,7 +205,8 @@ vulnerability should be kept in mind.
 
 =head1 NOTE
 
-A C<IO::Handle> object is a GLOB reference. Some modules that
+A C<IO::Handle> object is a reference to a symbol/GLOB reference (see
+the C<Symbol> package).  Some modules that
 inherit from C<IO::Handle> may want to keep object related variables
 in the hash table part of the GLOB. In an attempt to prevent modules
 trampling on each other I propose the that any such module should prefix
@@ -235,7 +243,7 @@ use IO ();	# Load the XS module
 require Exporter;
 @ISA = qw(Exporter);
 
-$VERSION = "1.19";
+$VERSION = "1.21";
 
 @EXPORT_OK = qw(
     autoflush
@@ -366,7 +374,7 @@ sub eof {
 }
 
 sub print {
-    @_ or croak 'usage: $io->print([ARGS])';
+    @_ or croak 'usage: $io->print(ARGS)';
     my $this = shift;
     print $this @_;
 }
@@ -436,81 +444,86 @@ sub autoflush {
 }
 
 sub output_field_separator {
-    my $old = new SelectSaver qualify($_[0], caller);
+    carp "output_field_separator is not supported on a per-handle basis"
+	if ref($_[0]);
     my $prev = $,;
     $, = $_[1] if @_ > 1;
     $prev;
 }
 
 sub output_record_separator {
-    my $old = new SelectSaver qualify($_[0], caller);
+    carp "output_record_separator is not supported on a per-handle basis"
+	if ref($_[0]);
     my $prev = $\;
     $\ = $_[1] if @_ > 1;
     $prev;
 }
 
 sub input_record_separator {
-    my $old = new SelectSaver qualify($_[0], caller);
-    my $prev = $/;
     carp "input_record_separator is not supported on a per-handle basis"
 	if ref($_[0]);
+    my $prev = $/;
     $/ = $_[1] if @_ > 1;
     $prev;
 }
 
 sub input_line_number {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $now  = select;
+    my $keep = $.;
+    my $tell = tell qualify($_[0], caller) if ref($_[0]);
     my $prev = $.;
-    carp "input_line_number is not supported on a per-handle basis"
-	if ref($_[0]);
     $. = $_[1] if @_ > 1;
+    $tell = tell $now;
+    $. = $keep;
     $prev;
 }
 
 sub format_page_number {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $%;
     $% = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_lines_per_page {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $=;
     $= = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_lines_left {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $-;
     $- = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_name {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $~;
     $~ = qualify($_[1], caller) if @_ > 1;
     $prev;
 }
 
 sub format_top_name {
-    my $old = new SelectSaver qualify($_[0], caller);
+    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $^;
     $^ = qualify($_[1], caller) if @_ > 1;
     $prev;
 }
 
 sub format_line_break_characters {
-    my $old = new SelectSaver qualify($_[0], caller);
+    carp "format_line_break_characters is not supported on a per-handle basis"
+	if ref($_[0]);
     my $prev = $:;
     $: = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_formfeed {
-    my $old = new SelectSaver qualify($_[0], caller);
+    carp "format_formfeed is not supported on a per-handle basis"
+	if ref($_[0]);
     my $prev = $^L;
     $^L = $_[1] if @_ > 1;
     $prev;
@@ -530,10 +543,10 @@ sub format_write {
     if (@_ == 2) {
 	my ($io, $fmt) = @_;
 	my $oldfmt = $io->format_name($fmt);
-	write($io);
+	CORE::write($io);
 	$io->format_name($oldfmt);
     } else {
-	write($_[0]);
+	CORE::write($_[0]);
     }
 }
 
@@ -569,9 +582,14 @@ sub constant {
 
 sub printflush {
     my $io = shift;
-    my $old = new SelectSaver qualify($io, caller);
+    my $old = new SelectSaver qualify($io, caller) if ref($io);
     local $| = 1;
-    print $io @_;
+    if(ref($io)) {
+        print $io @_;
+    }
+    else {
+	print @_;
+    }
 }
 
 1;

@@ -1,3 +1,73 @@
+Change 173 on 1998/07/14 by <gbarr@pobox.com> (Graham Barr)
+
+	IO::Socket
+	- Added method connected
+	
+	IO.xs
+	- Added check that file * is not null
+	
+	t/io_udp.t
+	- Added check for connected
+	- Made change to catch recv not returning the address, and added a fix to
+	  ensure test does not hang
+	
+	t/io_sock.t
+	- Added check for connected.
+
+Change 137 on 1998/05/21 by <gbarr@pobox.com> (Graham Barr)
+
+	IO::Socket::INET
+	- Added checks to all peer* and host* methods for undef
+
+Change 134 on 1998/05/09 by <gbarr@pobox.com> (Graham Barr)
+
+	t/io_sock.t
+	- fix race condition on Solaris & SunOS
+	
+	IO::Handle
+	- Applied patch from Gisle Aas <gisle@aas.no> for
+	    documentation update
+	- Applied patch from Kuma <tgy@chocobo.org>
+	    changed input_line_number to be on a per-handle basis.
+	
+	IO::File
+	- Applied patch from Gisle Aas <gisle@aas.no> for
+	    documentation update
+	
+	IO::Seekable
+	- Applied patch from Gisle Aas <gisle@aas.no> for
+	    documentation update
+	    added sysseek
+	
+	IO, IO::Socket::INET
+	- documentation update
+	
+	IO.xs
+	- Applied patch from Gisle Aas <gisle@aas.no> for
+	   blocking
+
+Change 133 on 1998/05/09 by <gbarr@pobox.com> (Graham Barr)
+
+	t/io_sock.t
+	- Added checks for blocking()
+
+Sun Apr 12 1998 <gbarr@pobox.com> (Graham Barr)
+
+	IO.xs
+	- enclosed newCONSTSUB in #ifdef as _64 now defines it.
+
+Thu Mar 19 1998 <gbarr@pobox.com> (Graham Barr)
+
+	All
+	- Changed copyright/distribution policy back to be the same as perl
+
+Sun Feb 15 1998 <gbarr@pobox.com> (Graham Barr)
+
+	IO::Socket
+	- Fix to ->accept, accept() returns false on error not undef.
+
+*** Release 1.19
+
 Thu Feb  5 1998 <gbarr@pobox.com> (Graham Barr)
 
 	All
@@ -181,6 +251,11 @@ Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
 	o Created a new package IO::Pipe::End so that pipe specific
 	  stuff can be moved out of IO::Handle.
 	o Added Ilya's OS/2 changes to Pipe.pm and io_pipe.t
+
+	o These changes happened somtime before the release of 1.15
+	  - added shutdown to IO::Socket
+	  - modified connect to not use alarm
+	  - modified accept and connect to use IO::Select
 
 *** Release 1.14
 

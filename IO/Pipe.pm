@@ -1,9 +1,8 @@
 # IO::Pipe.pm
 #
 # Copyright (c) 1996-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-# This program is free software; You may modify this code for your own use
-# but may only be re-distributed in an unaltered form and with prior consent
-# of the copyright owner.
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl itself.
 
 package IO::Pipe;
 
@@ -246,8 +245,7 @@ Graham Barr <gbarr@pobox.com>
 =head1 COPYRIGHT
 
 Copyright (c) 1996-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-This program is free software; You may modify this code for your own use
-but may only be re-distributed in an unaltered form and with prior consent
-of the copyright owner.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut

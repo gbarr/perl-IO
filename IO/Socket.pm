@@ -1,9 +1,8 @@
 # IO::Socket.pm
 #
 # Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-# This program is free software; You may modify this code for your own use
-# but may only be re-distributed in an unaltered form and with prior consent
-# of the copyright owner.
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl itself.
 
 package IO::Socket;
 
@@ -23,7 +22,7 @@ require IO::Socket::UNIX;
 
 @ISA = qw(IO::Handle);
 
-$VERSION = "1.23";
+$VERSION = "1.25";
 
 sub import {
     my $pkg = shift;
@@ -173,7 +172,7 @@ sub accept {
     	    croak "accept: timeout"
     	    	unless $sel->can_read($timeout);
     	}
-    	$peer = accept($new,$sock);
+    	$peer = accept($new,$sock) || undef;
     };
 
     return wantarray ? defined $peer ? ($new, $peer)
@@ -193,6 +192,12 @@ sub peername {
     getpeername($sock)
       || ${*$sock}{'io_socket_peername'}
       || undef;
+}
+
+sub connected {
+    @_ == 1 or croak 'usage: $sock->connected()';
+    my($sock) = @_;
+    getpeername($sock);
 }
 
 sub send {
@@ -389,6 +394,11 @@ Returns the numerical number for the protocol being used on the socket, if
 known. If the protocol is unknown, as with an AF_UNIX socket, zero
 is returned.
 
+=item connected
+
+If the socket is in a connected state the the peer address is returned.
+If the socket is not in a connected state then undef will be returned.
+
 =back
 
 =head1 SEE ALSO
@@ -402,8 +412,7 @@ Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
 =head1 COPYRIGHT
 
 Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-This program is free software; You may modify this code for your own use
-but may only be re-distributed in an unaltered form and with prior consent
-of the copyright owner.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut

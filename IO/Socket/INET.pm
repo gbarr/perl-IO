@@ -1,9 +1,8 @@
 # IO::Socket::INET.pm
 #
 # Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-# This program is free software; You may modify this code for your own use
-# but may only be re-distributed in an unaltered form and with prior consent
-# of the copyright owner.
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl itself.
 
 package IO::Socket::INET;
 
@@ -15,7 +14,7 @@ use Carp;
 use Exporter;
 
 @ISA = qw(IO::Socket);
-$VERSION = "1.23";
+$VERSION = "1.24";
 
 IO::Socket::INET->register_domain( AF_INET );
 
@@ -198,37 +197,43 @@ sub bind {
 sub sockaddr {
     @_ == 1 or croak 'usage: $sock->sockaddr()';
     my($sock) = @_;
-    (sockaddr_in($sock->sockname))[1];
+    my $name = $sock->sockname;
+    $name ? (sockaddr_in($name))[1] : undef;
 }
 
 sub sockport {
     @_ == 1 or croak 'usage: $sock->sockport()';
     my($sock) = @_;
-    (sockaddr_in($sock->sockname))[0];
+    my $name = $sock->sockname;
+    $name ? (sockaddr_in($name))[0] : undef;
 }
 
 sub sockhost {
     @_ == 1 or croak 'usage: $sock->sockhost()';
     my($sock) = @_;
-    inet_ntoa($sock->sockaddr);
+    my $addr = $sock->sockaddr;
+    $addr ? inet_ntoa($addr) : undef;
 }
 
 sub peeraddr {
     @_ == 1 or croak 'usage: $sock->peeraddr()';
     my($sock) = @_;
-    (sockaddr_in($sock->peername))[1];
+    my $name = $sock->peername;
+    $name ? (sockaddr_in($name))[1] : undef;
 }
 
 sub peerport {
     @_ == 1 or croak 'usage: $sock->peerport()';
     my($sock) = @_;
-    (sockaddr_in($sock->peername))[0];
+    my $name = $sock->peername;
+    $name ? (sockaddr_in($name))[0] : undef;
 }
 
 sub peerhost {
     @_ == 1 or croak 'usage: $sock->peerhost()';
     my($sock) = @_;
-    inet_ntoa($sock->peeraddr);
+    my $addr = $sock->peeraddr;
+    $addr ? inet_ntoa($addr) : undef;
 }
 
 1;
@@ -280,6 +285,11 @@ C<IO::Socket::INET> provides.
 If C<Listen> is defined then a listen socket is created, else if the
 socket type, which is derived from the protocol, is SOCK_STREAM then
 connect() is called.
+
+Although it is not illegal, the use of C<MultiHomed> on a socket
+which is in non-blocking mode is of little use. This is because the
+first connect will never fail with a timeout as the connaect call
+will not block.
 
 The C<PeerAddr> can be a hostname or the IP-address on the
 "xx.xx.xx.xx" form.  The C<PeerPort> can be a number or a symbolic
@@ -363,8 +373,7 @@ Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
 =head1 COPYRIGHT
 
 Copyright (c) 1996-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
-This program is free software; You may modify this code for your own use
-but may only be re-distributed in an unaltered form and with prior consent
-of the copyright owner.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut

@@ -9,7 +9,7 @@ use Carp;
 use vars qw(@ISA $VERSION @EXPORT);
 
 @ISA = qw(DynaLoader);
-$VERSION = "1.19";
+$VERSION = "1.20";
 bootstrap IO $VERSION;
 
 sub import {
@@ -34,7 +34,7 @@ IO - load various IO modules
 
 =head1 DESCRIPTION
 
-C<IO> provides a simple mechanism to load all of the IO modules at one go.
+C<IO> provides a simple mechanism to load some of the IO modules at one go.
 Currently this includes:
 
       IO::Handle
