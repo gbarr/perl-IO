@@ -26,10 +26,10 @@ print "not "
 	unless $poll->mask($stdout) == POLLOUT;
 print "ok 1\n";
 
-$poll->mask($dupout => POLLIN);
+$poll->mask($dupout => POLLPRI);
 
 print "not "
-	unless $poll->mask($dupout) == POLLIN;
+	unless $poll->mask($dupout) == POLLPRI;
 print "ok 2\n";
 
 $poll->poll(0.1);

@@ -1,4 +1,13 @@
-Patch 1.1801 -- Wed Oct 22 1997 <gbarr@pobox.com> (Graham Barr)
+*** Patch 1.1802
+
+Wed Nov 12 1997 <gbarr@pobox.com> (Graham Barr)
+
+	t/io_poll.t
+	- test 4 made an assumption that was not portable, fixed.
+
+*** Patch 1.1801
+
+Wed Oct 22 1997 <gbarr@pobox.com> (Graham Barr)
 
 	IO.xs
 	- change #ifdef's to allow compilation with 5.002
@@ -10,7 +19,9 @@ Patch 1.1801 -- Wed Oct 22 1997 <gbarr@pobox.com> (Graham Barr)
 	t/io_udp.t
 	- Fix to stop endless loop
 
-Release 1.18 -- Mon Oct 13 1997 <gbarr@pobox.com> (Graham Barr)
+*** Release 1.18
+
+Mon Oct 13 1997 <gbarr@pobox.com> (Graham Barr)
 
 	IO.xs, IO::Handle
 	- 1.17 broke compatability with 5.003, small tweaks to restore
@@ -45,7 +56,9 @@ Sun Oct  5 1997 <gbarr@pobox.com> (Graham Barr)
 	Makefile.PL
 	- Attempt to locate <poll.h> and define I_POLL if found
 
-Release 1.17 -- Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
+*** Release 1.17
+
+Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
 
 	IO.xs
 	- Fix bug in _poll for ANSI C compilers
@@ -56,7 +69,9 @@ Release 1.17 -- Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
 	IO::File
 	- Patch to open() for when file is in current directory.
 
-Release 1.16 -- Mon 15 Sep 1997 <gbarr@pobox.com> Graham Barr
+*** Release 1.16
+
+Mon 15 Sep 1997 <gbarr@pobox.com> Graham Barr
 
 	o New modules
 	  - IO::Dir
@@ -93,7 +108,9 @@ Release 1.16 -- Mon 15 Sep 1997 <gbarr@pobox.com> Graham Barr
 	    variables in IO::Socket to $sock as Chip suggested
 	  - Fixed usage messages to be consistant
 
-Release 1.15 -- Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
+*** Release 1.15
+
+Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
 
 	o Updated PODs for IO::Handle and IO::File
 	o Modified IO.xs so that DESTROY gets called on IO::File
@@ -104,7 +121,9 @@ Release 1.15 -- Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
 	  stuff can be moved out of IO::Handle.
 	o Added Ilya's OS/2 changes to Pipe.pm and io_pipe.t
 
-Release 1.14 -- Tue 24 Dec 1996 <bodg@tiuk.ti.com> Graham Barr
+*** Release 1.14
+
+Tue 24 Dec 1996 <bodg@tiuk.ti.com> Graham Barr
 
 	o Updated to patches in perl core dist.
 	o Added C<use strict> to all modules
@@ -112,14 +131,18 @@ Release 1.14 -- Tue 24 Dec 1996 <bodg@tiuk.ti.com> Graham Barr
 	o Added close statements to reader/writer in IO::Pipe
 	o IO::Handle::syswrite was calling sysread, fixed :-)
 
-Release 1.12 -- Thu 19 Sep 1996 <bodg@tiuk.ti.com> Graham Barr
+*** Release 1.12
+
+Thu 19 Sep 1996 <bodg@tiuk.ti.com> Graham Barr
 
 	o Modified IO.xs so that it will compile with pre perlio version
 	  of perl (ie pre perl5.003_02)
 	o Modified IO::Socket::send so not to pass 4 arguments to send
 	  if the socket is connected
 
-Release 1.10 -- Mon 11 Sep 1996 <bodg@tiuk.ti.com> Graham Barr
+*** Release 1.10
+
+Mon 11 Sep 1996 <bodg@tiuk.ti.com> Graham Barr
 
 	o Fixed a bug in IO::Socket which caused DESTROY to be called
 	  on a partly initialised connection
