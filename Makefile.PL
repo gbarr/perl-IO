@@ -1,7 +1,7 @@
 # This -*- perl -*- script makes the Makefile
 # $Id: Makefile.PL,v 1.8 1996/03/28 08:03:48 gbarr Exp $
 
-use 5.00302;
+require 5.002;
 use ExtUtils::MakeMaker;
 
 #--- MY package
@@ -59,4 +59,5 @@ WriteMakefile(
 			   },
  
 	'clean'   	=> {FILES => join(" ", qw(*% *.html *.bak *.old lib/*% lib/*/*%),values %PL_FILES)},
-	) ;
+	'macro'		=> { INSTALLDIRS => 'perl' },
+);

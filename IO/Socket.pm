@@ -114,7 +114,7 @@ use Exporter;
 
 # This one will turn 1.2 => 1.02 and 1.2.3 => 1.0203 and so on ...
 
-$VERSION = do{my @r=(q$Revision: 1.12 $=~/(\d+)/g);sprintf "%d."."%02d"x$#r,@r};
+$VERSION = do{my @r=(q$Revision: 1.13 $=~/(\d+)/g);sprintf "%d."."%02d"x$#r,@r};
 
 sub import {
     my $pkg = shift;
@@ -293,7 +293,9 @@ sub send {
     croak 'send: Cannot determine peer address'
 	 unless($peer);
 
-    my $r = send($fh, $_[1], $flags, $peer);
+    my $r = defined(getpeername($fh))
+	? send($fh, $_[1], $flags)
+	: send($fh, $_[1], $flags, $peer);
 
     # remember who we send to, if it was sucessful
     ${*$fh}{'io_socket_peername'} = $peer
@@ -705,7 +707,7 @@ Graham Barr <Graham.Barr@tiuk.ti.com>
 
 =head1 REVISION
 
-$Revision: 1.12 $
+$Revision: 1.13 $
 
 The VERSION is derived from the revision turning each number after the
 first dot into a 2 digit number so

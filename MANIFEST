@@ -1,12 +1,12 @@
 ChangeLog
-IO.pm
+IO.pm				(v0.00) 
 IO.xs
 IO/File.pm			(v1.05) File handle package
-IO/Handle.pm			(v1.11) Base handle package
+IO/Handle.pm			(v1.12) Base handle package
 IO/Pipe.pm			(v1.07) Pipe package
 IO/Seekable.pm			(v1.05) Methods for Seekable handles
 IO/Select.pm			(v1.09) 
-IO/Socket.pm			(v1.12) Socket handle package
+IO/Socket.pm			(v1.13) Socket handle package
 MANIFEST
 Makefile.PL
 README

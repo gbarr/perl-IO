@@ -10,12 +10,14 @@ BEGIN {
 use Config;
 
 BEGIN {
-    if ( ($Config{'extensions'} !~ /\bSocket\b/ ||
-          $Config{'extensions'} !~ /\bIO\b/	||
-	  $^O eq 'os2')    &&
-          !(($^O eq 'VMS') && $Config{d_socket})) {
-	print "1..0\n";
-	exit 0;
+    if(-d "lib" && -f "TEST") {
+        if ( ($Config{'extensions'} !~ /\bSocket\b/ ||
+              $Config{'extensions'} !~ /\bIO\b/	||
+	      $^O eq 'os2')    &&
+              !(($^O eq 'VMS') && $Config{d_socket})) {
+	    print "1..0\n";
+	    exit 0;
+        }
     }
 }
 
