@@ -1,4 +1,4 @@
-This is the perl5 IO::Handle distribution.
+This is the perl5 IO distribution.
 
 The majority of this code was extracted from FileHandle, but has now been
 split into a hierarchy of packages.

@@ -80,7 +80,7 @@ Graham Barr <bodg@tiuk.ti.com>
 
 =head1 REVISION
 
-$Revision: 1.3 $
+$Revision: 1.4 $
 
 =head1 COPYRIGHT
 
@@ -91,12 +91,12 @@ as Perl itself.
 =cut
 
 require 5.000;
-use vars qw($VERSION);
-use Carp;
-use Symbol;
+use 	vars qw($VERSION);
+use 	Carp;
+use 	Symbol;
 require IO::Handle;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.4 $ =~ /(\d+)\.(\d+)/);
 
 sub new {
     @_ == 1 || @_ == 3 or croak 'usage: new IO::Pipe([$READFH, $WRITEFH])';

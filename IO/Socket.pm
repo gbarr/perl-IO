@@ -42,7 +42,10 @@ in attempt to make the interface more flexible. These are
 perform the system call C<accept> on the socket and return a new object. The
 new object will be created in the same class as the listen socket, unless
 C<PKG> is specified. This object can be used to communicate with the client
-that was trying to connect.
+that was trying to connect. In a scalar context the new socket is returned,
+or undef upon failure. In an array context a two-element array is returned
+containing the new socket and the peer address, the list will
+be empty upon failure.
 
 Additional methods that are provided are
 
@@ -62,6 +65,7 @@ with one argument then getsockopt is called, otherwise setsockopt is called
 
 require 5.000;
 
+use Config;
 use IO::Handle;
 use Socket 1.3;
 use Carp;
@@ -71,7 +75,7 @@ use Exporter;
 
 @ISA = qw(IO::Handle);
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/);
 
 sub import {
     my $pkg = shift;
@@ -95,8 +99,13 @@ sub configure {
 
 sub socket {
     @_ == 4 or croak 'usage: $fh->socket(DOMAIN, TYPE, PROTOCOL)';
-    my($fh,$d,$t,$p) = @_;
-    return socket($fh,$d,$t,$p) ? $fh : undef;
+    my($fh,$domain,$type,$protocol) = @_;
+
+    socket($fh,$domain,$type,$protocol) or
+    	return undef;
+
+    ${*$fh}{'io_socket_type'} = $type;
+    $fh;
 }
 
 sub socketpair {
@@ -104,10 +113,13 @@ sub socketpair {
     my($class,$domain,$type,$protocol) = @_;
     my $fh1 = $class->new();
     my $fh2 = $class->new();
-    
-    return socketpair($fh1,$fh1,$domain,$type,$protocol)
-	? ($fh1,$fh2) 
-	: undef;
+
+    socketpair($fh1,$fh1,$domain,$type,$protocol) or
+    	return ();
+
+    ${*$fh1}{'io_socket_type'} = ${*$fh2}{'io_socket_type'} = $type;
+
+    ($fh1,$fh2);
 }
 
 sub connect {
@@ -115,20 +127,27 @@ sub connect {
     my $fh = shift;
     my $addr = @_ == 1 ? shift : sockaddr_in(@_);
     my $timeout = ${*$fh}{'io_socket_timeout'};
-    local($SIG{ALRM}) = $timeout ? sub { die "connect timed out" }
+    my $ok = undef;
+    local($SIG{ALRM}) = $timeout ? sub { die "connect timeout" }
 				 : $SIG{ALRM} || 'DEFAULT';
 
-    alarm($timeout)
-	if($timeout);
-
     eval {
-	connect($fh, $addr)
-    } or undef $fh;
+    	croak 'connect: Bad address'
+    	    if(@_ == 2 && !defined $_[1]);
 
-    alarm(0)
-	if($timeout);
+    	if($timeout) {
+    	    defined $Config{d_alarm} && defined alarm($timeout) or
+    	    	$timeout = 0;
+    	}
 
-    $fh;
+    	$ok = eval { connect($fh, $addr) };
+
+    	alarm(0)
+    	    if($timeout);
+    };
+
+    $ok ? $fh
+    	: undef;
 }
 
 sub bind {
@@ -156,20 +175,22 @@ sub accept {
     my $pkg = shift || $fh;
     my $timeout = ${*$fh}{'io_socket_timeout'};
     my $new = $pkg->new(Timeout => $timeout);
-    local($SIG{ALRM}) = $timeout ? sub { die "connect timed out" }
-				 : $SIG{ALRM} || 'DEFAULT';
-
-    alarm($timeout)
-	if($timeout);
+    my $peer = undef;
 
     eval {
-	accept($new,$fh)
-    } or undef $new;
+    	if($timeout) {
+    	    my $fdset = "";
+    	    vec($fdset, $fh->fileno,1) = 1;
+    	    die "accept timeout"
+    	    	unless select($fdset,undef,undef,$timeout);
+    	}
+    	$peer = accept($new,$fh);
+    };
 
-    alarm(0)
-	if($timeout);
-
-    $new;
+    return wantarray ? defined $peer ? ($new, $peer)
+    	    	    	    	     : () 
+    	      	     : defined $peer ? $new
+    	    	    	    	     : undef;
 }
 
 sub sockname {
@@ -245,6 +266,11 @@ sub timeout {
 	if(@_ == 2);
 
     $r;
+}
+
+sub socktype {
+    @_ == 1 or croak '$fh->socktype()';
+    ${*{$_[0]}}{'io_socket_type'} || undef;
 }
 
 =head1 SUB-CLASSES
@@ -515,7 +541,7 @@ Graham Barr <Graham.Barr@tiuk.ti.com>
 
 =head1 REVISION
 
-$Revision: 1.5 $
+$Revision: 1.7 $
 
 =head1 COPYRIGHT
 
