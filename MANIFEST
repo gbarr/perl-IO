@@ -1,4 +1,6 @@
 ChangeLog
+IO.pm
+IO.xs
 IO/File.pm			(v1.05) File handle package
 IO/Handle.pm			(v1.11) Base handle package
 IO/Pipe.pm			(v1.07) Pipe package
