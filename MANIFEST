@@ -1,0 +1,17 @@
+FileHandle.patch		Patch perl from FileHandle -> IO::Handle
+IO.pm				(v0) 
+IO.xs
+IO/File.pm			(v1.03) File handle package
+IO/Handle.pm			(v1.07) Base handle package
+IO/Pipe.pm			(v1.03) Pipe package
+IO/Seekable.pm			(v1.04) Methods for Seekable handles
+IO/Socket.pm			(v1.05) Socket handle package
+MANIFEST
+Makefile.PL
+README
+t/dup.t
+t/pipe.t
+t/socket.t
+t/tell.t
+t/udp.t
+t/xs.t

@@ -1,0 +1,14 @@
+This is the perl5 IO::Handle distribution.
+
+The majority of this code was extracted from FileHandle, but has now been
+split into a hierarchy of packages.
+
+The documentation is a little thin, it currently stands as the FileHandle
+docs split out. More could be done, if people decide this is the way to
+go then I will do more.
+
+There is a patch included which will patch perl to make all IO objects
+blessed into IO::Handle instead of FileHandle
+
+Graham Barr <bodg@tiuk.ti.com>
+
