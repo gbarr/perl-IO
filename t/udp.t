@@ -3,7 +3,7 @@
 $| = 1;
 print "1..3\n";
 
-use IO::Socket qw(AF_INET,SOCK_DGRAM INADDR_ANY);
+use IO::Socket qw(AF_INET SOCK_DGRAM INADDR_ANY);
 
 $udpa = IO::Socket::INET->new(Proto => 'udp', Addr => 'localhost');
 $udpb = IO::Socket::INET->new(Proto => 'udp', Addr => 'localhost');

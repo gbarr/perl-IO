@@ -75,12 +75,14 @@ use Exporter;
 
 @ISA = qw(IO::Handle);
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/);
+# This one will turn 1.2 => 1.02 and 1.2.3 => 1.0203 and so on ...
+
+$VERSION = do{my @r=(q$Revision: 1.9 $=~/(\d+)/g);sprintf "%d."."%02d"x$#r,@r};
 
 sub import {
     my $pkg = shift;
     my $callpkg = caller;
-    Exporter::export 'Socket', $callpkg;
+    Exporter::export 'Socket', $callpkg, @_;
 }
 
 sub new {
@@ -127,11 +129,10 @@ sub connect {
     my $fh = shift;
     my $addr = @_ == 1 ? shift : sockaddr_in(@_);
     my $timeout = ${*$fh}{'io_socket_timeout'};
-    my $ok = undef;
-    local($SIG{ALRM}) = $timeout ? sub { die "connect timeout" }
+    local($SIG{ALRM}) = $timeout ? sub { undef $fh; }
 				 : $SIG{ALRM} || 'DEFAULT';
 
-    eval {
+     eval {
     	croak 'connect: Bad address'
     	    if(@_ == 2 && !defined $_[1]);
 
@@ -140,14 +141,18 @@ sub connect {
     	    	$timeout = 0;
     	}
 
-    	$ok = eval { connect($fh, $addr) };
+	my $ok = connect($fh, $addr);
 
     	alarm(0)
     	    if($timeout);
+
+	croak "connect: timeout"
+	    unless defined $fh;
+
+	undef $fh unless $ok;
     };
 
-    $ok ? $fh
-    	: undef;
+    $fh;
 }
 
 sub bind {
@@ -181,7 +186,7 @@ sub accept {
     	if($timeout) {
     	    my $fdset = "";
     	    vec($fdset, $fh->fileno,1) = 1;
-    	    die "accept timeout"
+    	    croak "accept: timeout"
     	    	unless select($fdset,undef,undef,$timeout);
     	}
     	$peer = accept($new,$fh);
@@ -501,8 +506,7 @@ sub configure {
     my($fh,$arg) = @_;
     my($bport,$cport);
 
-    my $type = $arg->{Type} ||
-	croak 'IO::Socket::UNIX: Unkown socket type';
+    my $type = $arg->{Type} || SOCK_STREAM;
 
     $fh->socket(AF_UNIX, $type, 0) or
 	return undef;
@@ -541,7 +545,13 @@ Graham Barr <Graham.Barr@tiuk.ti.com>
 
 =head1 REVISION
 
-$Revision: 1.7 $
+$Revision: 1.9 $
+
+The VERSION is derived from the revision turning each number after the
+first dot into a 2 digit number so
+
+	Revision 1.8   => VERSION 1.08
+	Revision 1.2.3 => VERSION 1.0203
 
 =head1 COPYRIGHT
 
