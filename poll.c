@@ -13,9 +13,16 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "poll.h"
-#include <sys/time.h>
+#ifdef I_SYS_TIME
+# include <sys/time.h>
+#endif
+#ifdef I_TIME
+# include <time.h>
+#endif
 #include <sys/types.h>
-#include <sys/socket.h>
+#if defined(HAS_SOCKET) && !defined(VMS) /* VMS handles sockets via vmsish.h */
+#  include <sys/socket.h>
+#endif
 #include <sys/stat.h>
 #include <errno.h>
 

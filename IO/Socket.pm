@@ -23,7 +23,7 @@ require IO::Socket::UNIX;
 
 @ISA = qw(IO::Handle);
 
-$VERSION = "1.21";
+$VERSION = "1.22";
 
 sub import {
     my $pkg = shift;
@@ -43,7 +43,7 @@ sub new {
 			: $sock;
 }
 
-my @domain2pkg = ();
+my @domain2pkg;
 
 sub register_domain {
     my($p,$d) = @_;
@@ -97,10 +97,9 @@ sub socketpair {
 }
 
 sub connect {
-    @_ == 2 || @_ == 3 or
-	croak 'usage: $sock->connect(NAME) or $sock->connect(PORT, ADDR)';
+    @_ == 2 or croak 'usage: $sock->connect(NAME)';
     my $sock = shift;
-    my $addr = @_ == 1 ? shift : sockaddr_in(@_);
+    my $addr = shift;
     my $timeout = ${*$sock}{'io_socket_timeout'};
 
     eval {
@@ -139,10 +138,9 @@ sub connect {
 }
 
 sub bind {
-    @_ == 2 || @_ == 3 or
-	croak 'usage: $sock->bind(NAME) or $sock->bind(PORT, ADDR)';
+    @_ == 2 or croak 'usage: $sock->bind(NAME)';
     my $sock = shift;
-    my $addr = @_ == 1 ? shift : sockaddr_in(@_);
+    my $addr = shift;
 
     return bind($sock, $addr) ? $sock
 			      : undef;

@@ -1,3 +1,26 @@
+*** Patch 1.1803
+
+Mon Nov 17 1997 <gbarr@pobox.com> (Graham Barr)
+
+	poll.c
+	- Added #ifdef I_* tests
+	
+	IO::Socket
+	- Changed initialization of @domain2pkg to fix problem of Domain option
+	  not working
+	- Added patch for multi-homed hosts, Thanks to Gisle Aas <gisle@aas.no>
+	
+	IO::Socket::INET
+	- Change default proto to getprotobyname instead of 'tcp' constant string
+	- Added patch for multi-homed hosts, Thanks to Gisle Aas <gisle@aas.no>
+	
+	t/io_sock.t
+	- Change to test fix for Domain problem fixed in IO::Socket and be
+	  more comprehensive, Thanks to Gisle Aas <gisle@aas.no>
+	
+	t/io_unix.t
+	- New test, Thanks to Gisle Aas <gisle@aas.no>
+
 *** Patch 1.1802
 
 Wed Nov 12 1997 <gbarr@pobox.com> (Graham Barr)

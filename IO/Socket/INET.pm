@@ -14,7 +14,7 @@ use Carp;
 use Exporter;
 
 @ISA = qw(IO::Socket);
-$VERSION = "1.20";
+$VERSION = "1.21";
 
 IO::Socket::INET->register_domain( AF_INET );
 
@@ -95,13 +95,7 @@ sub configure {
 					    $proto);
     }
 
-    if(defined $raddr) {
-	$raddr = inet_aton($raddr);
-	return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
-		unless(defined $raddr);
-    }
-
-    $proto ||= 'tcp';
+    $proto ||= (getprotobyname('tcp'))[2];
 
     my $pname = (getprotobynumber($proto))[0];
     $type = $arg->{Type} || $socket_type{$pname};
@@ -128,15 +122,52 @@ sub configure {
 		unless($rport || $type == SOCK_DGRAM || $type == SOCK_RAW);
 
 	if($type == SOCK_STREAM || defined $raddr) {
-	    return _error($sock,'Bad peer address')
-	    	unless(defined $raddr);
+           my @raddr;
+           if ($raddr =~ /^\d+(?:\.\d+){3}$/) {
+               $raddr[0] = inet_aton($raddr);     # numeric address
+           } else {
+               (undef, undef, undef, undef, @raddr) = gethostbyname($raddr);
+           }
+           return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
+                   unless @raddr;
 
-	    $sock->connect($rport,$raddr) or
-		return _error($sock,"$!");
+            @raddr = (shift(@raddr)) unless $arg->{MultiHomed};
+
+           my $timeout = ${*$sock}{'io_socket_timeout'};
+           my $before = time();
+
+           my $i;
+           for ($i = 0; $i <= $#raddr; $i++) {
+                $raddr = $raddr[$i];
+               if ($sock->connect(pack_sockaddr_in($rport, $raddr))) {
+                   ${*$sock}{'io_socket_timeout'} = $timeout;
+                   return $sock;
+               }
+               if ($timeout && $i != $#raddr) {
+                    my $new_timeout = $timeout - (time() - $before);
+                   return _error($sock, "Timeout") if $new_timeout <= 0;
+                    ${*$sock}{'io_socket_timeout'} = $new_timeout;
+               }
+           }
+           return _error($sock,"$!");
 	}
     }
 
     $sock;
+}
+
+sub connect {
+    @_ == 2 || @_ == 3 or
+       croak 'usage: $sock->connect(NAME) or $sock->connect(PORT, ADDR)';
+    my $sock = shift;
+    return $sock->SUPER::connect(@_ == 1 ? shift : pack_sockaddr_in(@_));
+}
+
+sub bind {
+    @_ == 2 || @_ == 3 or
+       croak 'usage: $sock->bind(NAME) or $sock->bind(PORT, ADDR)';
+    my $sock = shift;
+    return $sock->SUPER::bind(@_ == 1 ? shift : pack_sockaddr_in(@_))
 }
 
 sub sockaddr {
@@ -216,6 +247,7 @@ C<IO::Socket::INET> provides.
     Listen	Queue size for listen
     Reuse	Set SO_REUSEADDR before binding
     Timeout	Timeout	value for various operations
+    MultiHomed  Try all adresses for multi-homed hosts
 
 
 If C<Listen> is defined then a listen socket is created, else if the
