@@ -3,6 +3,7 @@
 
 require 5.002;
 use ExtUtils::MakeMaker;
+use Config qw(%Config);
 
 #--- MY package
 
@@ -46,12 +47,25 @@ chk_version(Socket => '1.30') or
 	. "*** For IO::Socket to work you require version 1.30, or later, of\n"
 	. "    Socket.pm from CPAN/modules/by-module/Socket/Socket-x.x.tar.gz\n\n";
 
+#--- Attempt to find <poll.h>
+
+my $define = "";
+
+my @inc = split(/\s+/, join(" ",$Config{'usrinc'},$Config{'incpth'},$Config{'locincpth'}));
+foreach $path (@inc) {
+    if(-f $path . "/poll.h") {
+	$define .= "-DI_POLL ";
+	last;
+    }
+}
+
 #--- Write the Makefile
 
 WriteMakefile(
 	VERSION_FROM	=> "IO.pm",
 	NAME      	=> "IO",
 	OBJECT		=> '$(O_FILES)', 
+	DEFINE		=> $define,
 	'linkext' 	=> {LINKTYPE => 'dynamic' },
 	'dist'    	=> {COMPRESS => 'gzip -9f',
 			    SUFFIX   => 'gz', 

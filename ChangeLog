@@ -1,4 +1,4 @@
-Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
+Release 1.17 -- Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
 	IO.xs
 	- Fix bug in _poll for ANSI C compilers
 	
