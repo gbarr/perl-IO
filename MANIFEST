@@ -1,17 +1,25 @@
 ChangeLog
-IO.pm
+IO.pm				(v1.17) Top IO package 
 IO.xs
-IO/File.pm			(v1.06) File handle package
-IO/Handle.pm			(v1.14) Base handle package
-IO/Pipe.pm			(v1.08) Pipe package
-IO/Seekable.pm			(v1.06) Methods for Seekable handles
-IO/Select.pm			(v1.10) 
-IO/Socket.pm			(v1.15) Socket handle package
+IO/Dir.pm			(v1.03) Directory reading package
+IO/File.pm			(v1.07) File handle package
+IO/Handle.pm			(v1.17) Base handle package
+IO/Pipe.pm			(v1.10) Pipe package
+IO/Poll.pm			(v0.01) System poll() interface
+IO/Seekable.pm			(v1.07) Methods for Seekable handles
+IO/Select.pm			(v1.12) System select() interface
+IO/Socket.pm			(v1.20) Socket handle package
+IO/Socket/INET.pm		(v1.20) INET specific Socket methods
+IO/Socket/UNIX.pm		(v1.20) UNIX specific Socket methods
 MANIFEST
 Makefile.PL
 README
+poll.c				poll() emulation with select
+poll.h
+t/io_dir.t
 t/io_dup.t
 t/io_pipe.t
+t/io_poll.t
 t/io_sel.t
 t/io_sock.t
 t/io_tell.t

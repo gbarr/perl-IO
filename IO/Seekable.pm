@@ -27,7 +27,6 @@ See L<perlfunc> for complete descriptions of each of the following
 supported C<IO::Seekable> methods, which are just front ends for the
 corresponding built-in functions:
 
-    clearerr
     seek
     tell
 
@@ -40,7 +39,7 @@ L<IO::File>
 
 =head1 HISTORY
 
-Derived from FileHandle.pm by Graham Barr E<lt>bodg@tiuk.ti.comE<gt>
+Derived from FileHandle.pm by Graham Barr E<lt>gbarr@pobox.comE<gt>
 
 =cut
 
@@ -54,20 +53,15 @@ require Exporter;
 @EXPORT = qw(SEEK_SET SEEK_CUR SEEK_END);
 @ISA = qw(Exporter);
 
-$VERSION = "1.06";
-
-sub clearerr {
-    @_ == 1 or croak 'usage: $fh->clearerr()';
-    seek($_[0], 0, SEEK_CUR);
-}
+$VERSION = "1.07";
 
 sub seek {
-    @_ == 3 or croak 'usage: $fh->seek(POS, WHENCE)';
+    @_ == 3 or croak 'usage: $io->seek(POS, WHENCE)';
     seek($_[0], $_[1], $_[2]);
 }
 
 sub tell {
-    @_ == 1 or croak 'usage: $fh->tell()';
+    @_ == 1 or croak 'usage: $io->tell()';
     tell($_[0]);
 }
 

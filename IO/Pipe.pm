@@ -1,6 +1,6 @@
 # IO::Pipe.pm
 #
-# Copyright (c) 1996 Graham Barr <Graham.Barr@tiuk.ti.com>. All rights
+# Copyright (c) 1996 Graham Barr <gbarr@pobox.com>. All rights
 # reserved. This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
@@ -14,7 +14,7 @@ use vars qw($VERSION);
 use Carp;
 use Symbol;
 
-$VERSION = "1.09";
+$VERSION = "1.10";
 
 sub new {
     my $type = shift;
@@ -65,6 +65,7 @@ sub _doit {
         }
         bless $io, "IO::Handle";
         $io->fdopen($fh, $mode);
+	$fh->close;
 
         if ($do_spawn) {
           $pid = eval { system 1, @_ }; # 1 == P_NOWAIT
@@ -87,7 +88,7 @@ sub _doit {
 }
 
 sub reader {
-    @_ >= 1 or croak 'usage: $pipe->reader()';
+    @_ >= 1 or croak 'usage: $pipe->reader( [SUB_COMMAND_ARGS] )';
     my $me = shift;
     my $fh  = ${*$me}[0];
     my $pid = $me->_doit(0, $fh, @_)
@@ -104,7 +105,7 @@ sub reader {
 }
 
 sub writer {
-    @_ >= 1 or croak 'usage: $pipe->writer()';
+    @_ >= 1 or croak 'usage: $pipe->writer( [SUB_COMMAND_ARGS] )';
     my $me = shift;
     my $fh  = ${*$me}[1];
     my $pid = $me->_doit(1, $fh, @_)
@@ -142,7 +143,7 @@ __END__
 
 =head1 NAME
 
-IO::pipe - supply object methods for pipes
+IO::Pipe - supply object methods for pipes
 
 =head1 SYNOPSIS
 
@@ -185,12 +186,12 @@ processes.
 
 =item new ( [READER, WRITER] )
 
-Creates a C<IO::Pipe>, which is a reference to a
-newly created symbol (see the C<Symbol> package). C<IO::Pipe::new>
-optionally takes two arguments, which should be objects blessed into
-C<IO::Handle>, or a subclass thereof. These two objects will be used
-for the system call to C<pipe>. If no arguments are given then then
-method C<handles> is called on the new C<IO::Pipe> object.
+Creates a C<IO::Pipe>, which is a reference to a newly created symbol
+(see the C<Symbol> package). C<IO::Pipe::new> optionally takes two
+arguments, which should be objects blessed into C<IO::Handle>, or a
+subclass thereof. These two objects will be used for the system call
+to C<pipe>. If no arguments are given then method C<handles> is called
+on the new C<IO::Pipe> object.
 
 These two handles are held in the array part of the GLOB until either
 C<reader> or C<writer> is called.
@@ -227,7 +228,7 @@ L<IO::Handle>
 
 =head1 AUTHOR
 
-Graham Barr <bodg@tiuk.ti.com>
+Graham Barr <gbarr@pobox.com>
 
 =head1 COPYRIGHT
 

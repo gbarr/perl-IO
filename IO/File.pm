@@ -32,8 +32,8 @@ IO::File - supply object methods for filehandles
     if (defined $fh) {
         print $fh "corge\n";
 
-	$pos = $fh->getpos;
-	$fh->setpos($pos);
+        $pos = $fh->getpos;
+        $fh->setpos($pos);
 
         undef $fh;       # automatically closes the file
     }
@@ -54,6 +54,14 @@ these classes with methods that are specific to file handles.
 Creates a C<IO::File>.  If it receives any parameters, they are passed to
 the method C<open>; if the open fails, the object is destroyed.  Otherwise,
 it is returned to the caller.
+
+=item new_tmpfile
+
+Creates an C<IO::File> opened for read/write on a newly created temporary
+file.  On systems where this is possible, the temporary file is anonymous
+(i.e. it is unlinked after creation, but held open).  If the temporary
+file cannot be created or opened, the C<IO::File> object is destroyed.
+Otherwise, it is returned to the caller.
 
 =back
 
@@ -90,17 +98,16 @@ L<IO::Seekable>
 
 =head1 HISTORY
 
-Derived from FileHandle.pm by Graham Barr E<lt>F<bodg@tiuk.ti.com>E<gt>.
+Derived from FileHandle.pm by Graham Barr E<lt>F<gbarr@pobox.com>E<gt>.
 
 =cut
 
 require 5.000;
 use strict;
-use vars qw($VERSION @EXPORT @EXPORT_OK $AUTOLOAD @ISA);
+use vars qw($VERSION @EXPORT @EXPORT_OK @ISA);
 use Carp;
 use Symbol;
 use SelectSaver;
-use IO::Handle qw(_open_mode_string);
 use IO::Seekable;
 
 require Exporter;
@@ -108,25 +115,17 @@ require DynaLoader;
 
 @ISA = qw(IO::Handle IO::Seekable Exporter DynaLoader);
 
-$VERSION = "1.06";
+$VERSION = "1.07";
 
 @EXPORT = @IO::Seekable::EXPORT;
 
-sub import {
-    my $pkg = shift;
-    my $callpkg = caller;
-    Exporter::export $pkg, $callpkg, @_;
-
-    #
-    # If the Fcntl extension is available,
-    #  export its constants for sysopen().
-    #
-    eval {
-	require Fcntl;
-	Exporter::export 'Fcntl', $callpkg, '/^O_/';
-    };
-}
-
+eval {
+    # Make all Fcntl O_XXX constants available for importing
+    require Fcntl;
+    my @O = grep /^O_/, @Fcntl::EXPORT;
+    Fcntl->import(@O);  # first we import what we want to export
+    push(@EXPORT, @O);
+};
 
 ################################################
 ## Constructor
@@ -158,8 +157,8 @@ sub open {
 	    defined $perms or $perms = 0666;
 	    return sysopen($fh, $file, $mode, $perms);
 	}
-        $file = "./" . $file unless $file =~ m#^/#;
-	$file = _open_mode_string($mode) . " $file\0";
+	$file = './' . $file if $file =~ m{\A[^\\/\w]};
+	$file = IO::Handle::_open_mode_string($mode) . " $file\0";
     }
     open($fh, $file);
 }

@@ -143,7 +143,7 @@ listening for more connections on a listen socket
 
 =head1 AUTHOR
 
-Graham Barr E<lt>F<Graham.Barr@tiuk.ti.com>E<gt>
+Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
 
 =head1 COPYRIGHT
 
@@ -157,7 +157,7 @@ use     strict;
 use     vars qw($VERSION @ISA);
 require Exporter;
 
-$VERSION = "1.10";
+$VERSION = "1.12";
 
 @ISA = qw(Exporter); # This is only so we can do version checking
 

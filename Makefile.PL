@@ -1,5 +1,5 @@
 # This -*- perl -*- script makes the Makefile
-# $Id: Makefile.PL,v 1.2 1997/01/16 21:16:21 gbarr Exp $
+# $Id: Makefile.PL,v 1.3 1997/03/04 09:21:12 gbarr Exp $
 
 require 5.002;
 use ExtUtils::MakeMaker;
@@ -49,9 +49,9 @@ chk_version(Socket => '1.30') or
 #--- Write the Makefile
 
 WriteMakefile(
-	VERSION_FROM	=> "IO/Handle.pm",
+	VERSION_FROM	=> "IO.pm",
 	NAME      	=> "IO",
- 
+	OBJECT		=> '$(O_FILES)', 
 	'linkext' 	=> {LINKTYPE => 'dynamic' },
 	'dist'    	=> {COMPRESS => 'gzip -9f',
 			    SUFFIX   => 'gz', 

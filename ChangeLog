@@ -1,3 +1,50 @@
+Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
+	IO.xs
+	- Fix bug in _poll for ANSI C compilers
+	
+	IO::Socket
+	- Split IO::Socket::INET and IO::Socket::UNIX into separate files
+	
+	IO::File
+	- Patch to open() for when file is in current directory.
+
+Release 1.16 -- Mon 15 Sep 1997 <gbarr@pobox.com> Graham Barr
+
+	o New modules
+	  - IO::Dir
+	  - IO::Poll
+
+	o IO::Socket
+	  - Changed new to call autoflush on the new socket
+	  - IO::Socket::INET->new now accepts a single argument
+	  - IO::Socket::INET default to protocol 'tcp'
+	
+	o IO::File
+	  - Added doc for new_tmpfile
+	
+	o IO::Handle
+	  - Removed use of AutoLoader for constants, constants are
+	    now defined as constant XS subs
+	  - Added fsync, but will not be avaliable for use
+	    unless HAS_FSYNC is defined, perls configure does not define
+	    this yet.
+	  - Moved bootstrap of IO.xs to IO.pm. IO::Handle no longer
+	    contains an AUTOLOAD sub in it's ISA hier
+
+	o IO::Seekable
+	  - Remove clearerr, as it is defined in IO.xs
+
+	o IO.xs
+	  - Patched IO.xs with patch from Chip for setvbuf warning
+	  - Added XS sub "constant" for backwards compatability
+
+	o Misc
+	  - Fixed IO::Socket::configure, it was not passing $arg to domain
+	    specific package
+	  - Changed all $fh variables in IO::Handle to $io and all $fh
+	    variables in IO::Socket to $sock as Chip suggested
+	  - Fixed usage messages to be consistant
+
 Release 1.15 -- Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
 
 	o Updated PODs for IO::Handle and IO::File
