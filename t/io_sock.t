@@ -1,5 +1,23 @@
 #!./perl
 
+BEGIN {
+    unless(grep /blib/, @INC) {
+	chdir 't' if -d 't';
+	@INC = '../lib' if -d '../lib';
+    }
+}
+
+use Config;
+
+BEGIN {
+    if ( ($Config{'extensions'} !~ /\bSocket\b/ ||
+          $Config{'extensions'} !~ /\bIO\b/)    &&
+          !(($^O eq 'VMS') && $Config{d_socket})) {
+	print "1..0\n";
+	exit 0;
+    }
+}
+
 $| = 1;
 print "1..5\n";
 

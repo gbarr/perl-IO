@@ -1,12 +1,30 @@
 #!./perl
 
-# $RCSfile: tell.t,v $$Revision: 1.1 $$Date: 1996/05/01 10:52:47 $
+BEGIN {
+    unless(grep /blib/, @INC) {
+	chdir 't' if -d 't';
+	@INC = '../lib' if -d '../lib';
+	$tell_file = "TEST";
+    }
+    else {
+	$tell_file = "Makefile";
+    }
+}
+
+use Config;
+
+BEGIN {
+    if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
+	print "1..0\n";
+	exit 0;
+    }
+}
 
 print "1..13\n";
 
 use IO::File;
 
-$tst = IO::File->new("Makefile","r") || die("Can't open Makefile");
+$tst = IO::File->new("$tell_file","r") || die("Can't open $tell_file");
 
 if ($tst->eof) { print "not ok 1\n"; } else { print "ok 1\n"; }
 

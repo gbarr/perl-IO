@@ -6,6 +6,12 @@ package IO::Seekable;
 
 IO::Seekable - supply seek based methods for I/O objects
 
+=head1 SYNOPSIS
+
+    use IO::Seekable;
+    package IO::Something;
+    @ISA = qw(IO::Seekable);
+
 =head1 DESCRIPTION
 
 C<IO::Seekable> does not have a constuctor of its own as is intended to
@@ -38,7 +44,7 @@ Derived from FileHandle.pm by Graham Barr <bodg@tiuk.ti.com>
 
 =head1 REVISION
 
-$Revision: 1.4 $
+$Revision: 1.5 $
 
 =cut
 
@@ -51,7 +57,7 @@ require Exporter;
 @EXPORT = qw(SEEK_SET SEEK_CUR SEEK_END);
 @ISA = qw(Exporter);
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/);
 
 sub clearerr {
     @_ == 1 or croak 'usage: $fh->clearerr()';

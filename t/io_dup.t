@@ -1,5 +1,21 @@
 #!./perl
 
+BEGIN {
+    unless(grep /blib/, @INC) {
+	chdir 't' if -d 't';
+	@INC = '../lib' if -d '../lib';
+    }
+}
+
+use Config;
+
+BEGIN {
+    if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
+	print "1..0\n";
+	exit 0;
+    }
+}
+
 use IO::Handle;
 use IO::File;
 

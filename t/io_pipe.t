@@ -1,6 +1,21 @@
 #!./perl
 
-# $RCSfile: pipe.t,v $$Revision: 1.1 $$Date: 1996/05/01 10:52:47 $
+
+BEGIN {
+    unless(grep /blib/, @INC) {
+	chdir 't' if -d 't';
+	@INC = '../lib' if -d '../lib';
+    }
+}
+
+use Config;
+
+BEGIN {
+    if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
+	print "1..0\n";
+	exit 0;
+    }
+}
 
 use IO::Pipe;
 
