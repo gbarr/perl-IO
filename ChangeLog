@@ -1,3 +1,19 @@
+*** Patch 1.1804
+
+Sat Jan 17 1998 <gbarr@pobox.com> (Graham Barr)
+
+	t/io_sock.t
+	- Replaced C<Listen => 0> with C<LocalAddr => 'localhost'>
+	
+	IO/Socket/INET.pm
+	- Modified the MultiHomed code. Now each address for a given host has
+	  a timeout of C<Timeout>.
+	- added _get_addr method for doing hostname lookups. Now Net::DNS can be
+	  use by sub-classing IO::Socket::INET, Thanks Gisle Aas
+	
+	t/io_multihomed.t
+	- new test added. Thanks Gisle Aas.
+
 *** Patch 1.1803
 
 Mon Nov 17 1997 <gbarr@pobox.com> (Graham Barr)

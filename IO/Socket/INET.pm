@@ -14,7 +14,7 @@ use Carp;
 use Exporter;
 
 @ISA = qw(IO::Socket);
-$VERSION = "1.21";
+$VERSION = "1.22";
 
 IO::Socket::INET->register_domain( AF_INET );
 
@@ -74,6 +74,18 @@ sub _error {
     return undef;
 }
 
+sub _get_addr {
+    my($sock,$addr_str, $multi) = @_;
+    my @addr;
+    if ($multi && $addr_str !~ /^\d+(?:\.\d+){3}$/) {
+	(undef, undef, undef, undef, @addr) = gethostbyname($addr_str);
+    } else {
+	my $h = inet_aton($addr_str);
+	push(@addr, $h) if defined $h;
+    }
+    @addr;
+}
+
 sub configure {
     my($sock,$arg) = @_;
     my($lport,$rport,$laddr,$raddr,$proto,$type);
@@ -100,57 +112,63 @@ sub configure {
     my $pname = (getprotobynumber($proto))[0];
     $type = $arg->{Type} || $socket_type{$pname};
 
-    $sock->socket(AF_INET, $type, $proto) or
-	return _error($sock,"$!");
+    my @raddr = ();
 
-    if ($arg->{Reuse}) {
-	$sock->sockopt(SO_REUSEADDR,1) or
-		return _error($sock);
+    if(defined $raddr) {
+	@raddr = $sock->_get_addr($raddr, $arg->{MultiHomed});
+	return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
+	    unless @raddr;
     }
 
-    if($lport || ($laddr ne INADDR_ANY) || exists $arg->{Listen}) {
-	$sock->bind($lport || 0, $laddr) or
-		return _error($sock,"$!");
-    }
+    while(1) {
 
-    if(exists $arg->{Listen}) {
-	$sock->listen($arg->{Listen} || 5) or
+	$sock->socket(AF_INET, $type, $proto) or
 	    return _error($sock,"$!");
-    }
-    else {
+
+	if ($arg->{Reuse}) {
+	    $sock->sockopt(SO_REUSEADDR,1) or
+		    return _error($sock,"$!");
+	}
+
+	if($lport || ($laddr ne INADDR_ANY) || exists $arg->{Listen}) {
+	    $sock->bind($lport || 0, $laddr) or
+		    return _error($sock,"$!");
+	}
+
+	if(exists $arg->{Listen}) {
+	    $sock->listen($arg->{Listen} || 5) or
+		return _error($sock,"$!");
+	    last;
+	}
+
+        $raddr = shift @raddr;
+
 	return _error($sock,'Cannot determine remote port')
 		unless($rport || $type == SOCK_DGRAM || $type == SOCK_RAW);
 
-	if($type == SOCK_STREAM || defined $raddr) {
-           my @raddr;
-           if ($raddr =~ /^\d+(?:\.\d+){3}$/) {
-               $raddr[0] = inet_aton($raddr);     # numeric address
-           } else {
-               (undef, undef, undef, undef, @raddr) = gethostbyname($raddr);
-           }
-           return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
-                   unless @raddr;
+	last
+	    unless($type == SOCK_STREAM || defined $raddr);
 
-            @raddr = (shift(@raddr)) unless $arg->{MultiHomed};
+	return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
+	    unless defined $raddr;
 
-           my $timeout = ${*$sock}{'io_socket_timeout'};
-           my $before = time();
+#        my $timeout = ${*$sock}{'io_socket_timeout'};
+#        my $before = time() if $timeout;
 
-           my $i;
-           for ($i = 0; $i <= $#raddr; $i++) {
-                $raddr = $raddr[$i];
-               if ($sock->connect(pack_sockaddr_in($rport, $raddr))) {
-                   ${*$sock}{'io_socket_timeout'} = $timeout;
-                   return $sock;
-               }
-               if ($timeout && $i != $#raddr) {
-                    my $new_timeout = $timeout - (time() - $before);
-                   return _error($sock, "Timeout") if $new_timeout <= 0;
-                    ${*$sock}{'io_socket_timeout'} = $new_timeout;
-               }
-           }
-           return _error($sock,"$!");
-	}
+        if ($sock->connect(pack_sockaddr_in($rport, $raddr))) {
+#            ${*$sock}{'io_socket_timeout'} = $timeout;
+            return $sock;
+        }
+
+	return _error($sock,"$!")
+	    unless @raddr;
+
+#	if ($timeout) {
+#	    my $new_timeout = $timeout - (time() - $before);
+#	    return _error($sock, "Timeout") if $new_timeout <= 0;
+#	    ${*$sock}{'io_socket_timeout'} = $new_timeout;
+#        }
+
     }
 
     $sock;

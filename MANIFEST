@@ -27,3 +27,4 @@ t/io_udp.t
 t/io_xs.t
 t/io_const.t
 t/io_unix.t
+t/io_multihomed.t

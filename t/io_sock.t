@@ -116,7 +116,7 @@ if($pid = fork()) {
 # Then test UDP sockets
 $server = IO::Socket->new(Domain => AF_INET,
                          Proto  => 'udp',
-                         Listen => 0);
+                         LocalAddr => 'localhost');
 $port = $server->sockport;
 
 if ($pid = fork()) {
