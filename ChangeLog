@@ -1,3 +1,14 @@
+Release 1.15 -- Sun 19 Jan 1997 <bodg@tiuk.ti.com> Graham Barr
+
+	o Updated PODs for IO::Handle and IO::File
+	o Modified IO.xs so that DESTROY gets called on IO::File
+	  objects that were created with IO::File->new_tmpfile
+	o Modified the domain2pkg code in IO::Socket so that it
+	  does not use blessd refs
+	o Created a new package IO::Pipe::End so that pipe specific
+	  stuff can be moved out of IO::Handle.
+	o Added Ilya's OS/2 changes to Pipe.pm and io_pipe.t
+
 Release 1.14 -- Tue 24 Dec 1996 <bodg@tiuk.ti.com> Graham Barr
 
 	o Updated to patches in perl core dist.

@@ -121,17 +121,28 @@ fsetpos(handle, pos)
 
 MODULE = IO	PACKAGE = IO::File	PREFIX = f
 
-OutputStream
+SV *
 new_tmpfile(packname = "IO::File")
     char *		packname
     CODE:
+    {
+	OutputStream fp;
 #ifdef PerlIO
-	RETVAL = PerlIO_tmpfile();
+	fp = PerlIO_tmpfile();
 #else
-	RETVAL = tmpfile();
+	fp = tmpfile();
 #endif
-    OUTPUT:
-	RETVAL
+	ST(0) = sv_newmortal();
+	{
+	    GV *gv = newGVgen(packname);
+	    if ( do_open(gv, "+>&", 3, FALSE, 0, 0, fp) )
+		sv_setsv(ST(0), sv_bless(newRV((SV*)gv), gv_stashpv(packname,1)));
+	    else
+		ST(0) = &sv_undef;
+	    SvREFCNT(gv) -= 2;
+	}
+
+    }
 
 MODULE = IO	PACKAGE = IO::Handle	PREFIX = f
 
