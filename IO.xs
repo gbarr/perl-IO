@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
+ * This program is free software; You may modify this code for your own use
+ * but may only be re-distributed in an unaltered form and with prior consent
+ * of the copyright owner.
+ */
+
 #include "EXTERN.h"
 #define PERLIO_NOT_STDIO 1
 #include "perl.h"

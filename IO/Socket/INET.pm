@@ -1,8 +1,9 @@
 # IO::Socket::INET.pm
 #
-# Copyright (c) 1996 Graham Barr <gbarr@pobox.com>. All rights
-# reserved. This program is free software; you can redistribute it and/or
-# modify it under the same terms as Perl itself.
+# Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
+# This program is free software; You may modify this code for your own use
+# but may only be re-distributed in an unaltered form and with prior consent
+# of the copyright owner.
 
 package IO::Socket::INET;
 
@@ -14,7 +15,7 @@ use Carp;
 use Exporter;
 
 @ISA = qw(IO::Socket);
-$VERSION = "1.22";
+$VERSION = "1.23";
 
 IO::Socket::INET->register_domain( AF_INET );
 
@@ -67,8 +68,8 @@ sub _sock_info {
 
 sub _error {
     my $sock = shift;
+    local($!);
     $@ = join("",ref($sock),": ",@_);
-    carp $@ if $^W;
     close($sock)
 	if(defined fileno($sock));
     return undef;
@@ -91,6 +92,9 @@ sub configure {
     my($lport,$rport,$laddr,$raddr,$proto,$type);
 
 
+    $arg->{LocalAddr} = $arg->{LocalHost}
+	if exists $arg->{LocalHost} && !exists $arg->{LocalAddr};
+
     ($laddr,$lport,$proto) = _sock_info($arg->{LocalAddr},
 					$arg->{LocalPort},
 					$arg->{Proto});
@@ -100,6 +104,9 @@ sub configure {
 
     return _error($sock,"Bad hostname '",$arg->{LocalAddr},"'")
 	unless(defined $laddr);
+
+    $arg->{PeerAddr} = $arg->{PeerHost}
+	if exists $arg->{PeerHost} && !exists $arg->{PeerAddr};
 
     unless(exists $arg->{Listen}) {
 	($raddr,$rport,$proto) = _sock_info($arg->{PeerAddr},
@@ -257,8 +264,10 @@ C<IO::Socket::INET> provides.
 
 
     PeerAddr	Remote host address          <hostname>[:<port>]
+    PeerHost	Synonym for PeerAddr
     PeerPort	Remote port or service       <service>[(<no>)] | <no>
     LocalAddr	Local host bind	address      hostname[:port]
+    LocalHost	Synonym for LocalAddr
     LocalPort	Local host bind	port         <service>[(<no>)] | <no>
     Proto	Protocol name (or number)    "tcp" | "udp" | ...
     Type	Socket type                  SOCK_STREAM | SOCK_DGRAM | ...
@@ -342,5 +351,20 @@ Return the address part of the sockaddr structure for the socket on the
 peer host in a text form xx.xx.xx.xx
 
 =back
+
+=head1 SEE ALSO
+
+L<Socket>, L<IO::Socket>
+
+=head1 AUTHOR
+
+Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1996-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
+This program is free software; You may modify this code for your own use
+but may only be re-distributed in an unaltered form and with prior consent
+of the copyright owner.
 
 =cut

@@ -9,7 +9,7 @@ use Carp;
 use vars qw(@ISA $VERSION @EXPORT);
 
 @ISA = qw(DynaLoader);
-$VERSION = "1.18";
+$VERSION = "1.19";
 bootstrap IO $VERSION;
 
 sub import {

@@ -129,10 +129,6 @@ This C<write> is like C<write> found in C, that is it is the
 opposite of read. The wrapper for the perl C<write> function is
 called C<format_write>.
 
-=item $io->flush
-
-Flush the given handle's buffer.
-
 =item $io->error
 
 Returns a true value if the given handle has experienced any errors
@@ -156,6 +152,11 @@ is not implemented on all platforms. See L<fsync(3c)>.
 C<flush> causes perl to flush any buffered data at the perlio api level.
 Any unread data in the buffer will be discarded, and any unwritten data
 will be written to the underlying file descriptor.
+
+=item $io->printflush ( ARGS )
+
+Turns on autoflush, print ARGS and then restores the autoflush status of the
+C<IO::Handle> object.
 
 =item $io->blocking ( [ BOOL ] )
 
@@ -234,7 +235,7 @@ use IO ();	# Load the XS module
 require Exporter;
 @ISA = qw(Exporter);
 
-$VERSION = "1.18";
+$VERSION = "1.19";
 
 @EXPORT_OK = qw(
     autoflush
@@ -255,6 +256,9 @@ $VERSION = "1.18";
     printf
     getline
     getlines
+
+    printflush
+    flush
 
     SEEK_SET
     SEEK_CUR
@@ -558,6 +562,16 @@ sub constant {
     my $name = shift;
     (($name =~ /^(SEEK_(SET|CUR|END)|_IO[FLN]BF)$/) && defined &{$name})
 	? &{$name}() : undef;
+}
+
+
+# so that flush.pl can be depriciated
+
+sub printflush {
+    my $io = shift;
+    my $old = new SelectSaver qualify($io, caller);
+    local $| = 1;
+    print $io @_;
 }
 
 1;

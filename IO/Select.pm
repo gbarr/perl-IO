@@ -1,8 +1,9 @@
 # IO::Select.pm
 #
-# Copyright (c) 1995 Graham Barr. All rights reserved. This program is free
-# software; you can redistribute it and/or modify it under the same terms
-# as Perl itself.
+# Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
+# This program is free software; You may modify this code for your own use
+# but may only be re-distributed in an unaltered form and with prior consent
+# of the copyright owner.
 
 package IO::Select;
 
@@ -369,9 +370,10 @@ Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 1995 Graham Barr. All rights reserved. This program is free
-software; you can redistribute it and/or modify it under the same terms
-as Perl itself.
+Copyright (c) 1997-8 Graham Barr <gbarr@pobox.com>. All rights reserved.
+This program is free software; You may modify this code for your own use
+but may only be re-distributed in an unaltered form and with prior consent
+of the copyright owner.
 
 =cut
 

@@ -1,3 +1,25 @@
+Thu Feb  5 1998 <gbarr@pobox.com> (Graham Barr)
+
+	All
+	- change copyright notice
+	
+	IO::Socket::INET
+	- changed configure to accept PeerHost and LocalHost as well as the
+	  PeerAddr and LocalAddr arguments.
+
+Mon Feb  2 1998 <gbarr@pobox.com> (Graham Barr)
+
+	IO::Handle
+	- Added printflush so that flush.pl can be depreciated
+
+	IO::Socket
+	- Remove C<use Config> statement as it was not needed
+
+Tue Jan 27 1998 <gbarr@pobox.com> (Graham Barr)
+
+	IO::Socket::INET
+	- removed carp if $^W
+
 *** Patch 1.1804
 
 Sat Jan 17 1998 <gbarr@pobox.com> (Graham Barr)
