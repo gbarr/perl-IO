@@ -185,8 +185,8 @@ require Exporter;
 ##
 @FileHandle::ISA = qw(IO::Handle);
 
-$VERSION = "1.10";
-$RCS = sprintf("%s", q$Revision: 1.13 $ =~ /([\d\.]+)/);
+$VERSION = "1.11";
+$RCS = sprintf("%s", q$Revision: 1.14 $ =~ /([\d\.]+)/);
 
 @EXPORT_OK = qw(
     autoflush

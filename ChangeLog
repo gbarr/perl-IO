@@ -1,0 +1,36 @@
+Release 1.10 -- Mon 11 Sep 1996 <bodg@tiuk.ti.com> Graham Barr
+
+	o Fixed a bug in IO::Socket which caused DESTROY to be called
+	  on a partly initialised connection
+	o Changed IO.xs to use Perlio
+	o Modified usage message to report correct package
+	o Added IO::File::new changes from Chip, to allow PERM to be passed
+	o Added sysread and syswrite methods to IO::Handle
+	o Updated documentation
+	o Fixed a bug in IO::Select that caused a hang if the last handle
+	  was removed.
+	o Added count method to IO::Select
+	o Renamed and modified tests so that they can be copied into the
+	  perl distribution
+	o Added fcntl and ioctl methods to IO::Handle
+
+Thu 25 Jul 1996 <bodg@tiuk.ti.com> Graham Barr
+
+	o It is now not necessary to call the domain sub-classes of
+	  IO::Socket. when connect is called it notes the domain.
+	  Domain specific methods, which are normally non-critical, are
+	  called via this note-ing.
+	o Added methods to IO::Socket to retrieve the domain, type and
+	  protocol of a given socket
+
+Tue 23 Jul 1996 <bodg@tiuk.ti.com> Graham Barr
+
+	o IO::Socket::connect changed how we do timeouts, as it did not work
+
+	o IO::Handle::new_from_fd removed method call to _ref_fd, which was
+	  a leftover from FileHandle
+
+Fri 28 Jun 1996 <bodg@tiuk.ti.com> Graham Barr
+
+	o Modified IO::Socket::UNIX::configure to default to using a socket
+	  type of SOCK_STREAM if no type is specified.
