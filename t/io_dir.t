@@ -6,7 +6,7 @@ BEGIN {
         @INC = '../lib' if -d '../lib';
     }
     require Config; import Config;
-    if (not $Config{'d_readdir'}) {
+    if ($] < 5.00326 || not $Config{'d_readdir'}) {
 	print "1..0\n";
 	exit 0;
     }

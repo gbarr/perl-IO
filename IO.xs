@@ -21,6 +21,21 @@ typedef FILE * InputStream;
 typedef FILE * OutputStream;
 #endif
 
+#include "patchlevel.h"
+
+#if (PATCHLEVEL == 3) && (SUBVERSION < 22)
+     /* before 5.003_22 */
+#    define MY_start_subparse(fmt,flags) start_subparse()
+#else
+#  if (PATCHLEVEL == 3) && (SUBVERSION == 22)
+     /* 5.003_22 */
+#    define MY_start_subparse(fmt,flags) start_subparse(flags)
+#  else
+     /* 5.003_23  onwards */
+#    define MY_start_subparse(fmt,flags) start_subparse(fmt,flags)
+#  endif
+#endif
+
 static int
 not_here(s)
 char *s;
@@ -61,7 +76,7 @@ newCONSTSUB(stash,name,sv)
 	curstash = curcop->cop_stash = stash;
 
     newSUB(
-	start_subparse(FALSE, 0),
+	MY_start_subparse(FALSE, 0),
 	newSVOP(OP_CONST, 0, newSVpv(name,0)),
 	newSVOP(OP_CONST, 0, &sv_no),	/* SvPV(&sv_no) == "" -- GMB */
 	newSTATEOP(0, Nullch, newSVOP(OP_CONST, 0, sv))

@@ -1,4 +1,30 @@
+Wed Oct  8 1997 <gbarr@pobox.com> (Graham Barr)
+
+	IO.xs
+	- Added #define's to cope with argument changes to start_subparse
+	  from 5.003_22, _23 and _24
+	
+	IO::Select
+	- Renamed has_error to be has_exception which is more correct,
+	  has_error is a wrapper around has_exception with a warning if
+	  $^W is set.
+	
+	Makefile.PL
+	- Remove 'linkext' option to WriteMakefile so that static linking
+	  should work properly, cannot remember why I added it.
+
+Sun Oct  5 1997 <gbarr@pobox.com> (Graham Barr)
+
+	IO::Pipe
+	- GLOB assignment does not copy the fileno while under -T
+	  added checks for undefined fileno, and added fdopen
+	- reader and write can now be called as static methods
+
+	Makefile.PL
+	- Attempt to locate <poll.h> and define I_POLL if found
+
 Release 1.17 -- Fri Sep 26 1997 <gbarr@pobox.com> (Graham Barr)
+
 	IO.xs
 	- Fix bug in _poll for ANSI C compilers
 	

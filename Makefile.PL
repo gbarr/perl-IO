@@ -66,7 +66,6 @@ WriteMakefile(
 	NAME      	=> "IO",
 	OBJECT		=> '$(O_FILES)', 
 	DEFINE		=> $define,
-	'linkext' 	=> {LINKTYPE => 'dynamic' },
 	'dist'    	=> {COMPRESS => 'gzip -9f',
 			    SUFFIX   => 'gz', 
 			    DIST_DEFAULT => 'all tardist',

@@ -14,7 +14,7 @@ use vars qw($VERSION);
 use Carp;
 use Symbol;
 
-$VERSION = "1.10";
+$VERSION = "1.12";
 
 sub new {
     my $type = shift;
@@ -90,6 +90,10 @@ sub _doit {
 sub reader {
     @_ >= 1 or croak 'usage: $pipe->reader( [SUB_COMMAND_ARGS] )';
     my $me = shift;
+
+    return undef
+	unless(ref($me) || ref($me = $me->new));
+
     my $fh  = ${*$me}[0];
     my $pid = $me->_doit(0, $fh, @_)
         if(@_);
@@ -97,6 +101,8 @@ sub reader {
     close ${*$me}[1];
     bless $me, ref($fh);
     *{*$me} = *{*$fh};          # Alias self to handle
+    $me->fdopen($fh->fileno,"r")
+	unless defined($me->fileno);
     bless $fh;                  # Really wan't un-bless here
     ${*$me}{'io_pipe_pid'} = $pid
         if defined $pid;
@@ -107,6 +113,10 @@ sub reader {
 sub writer {
     @_ >= 1 or croak 'usage: $pipe->writer( [SUB_COMMAND_ARGS] )';
     my $me = shift;
+
+    return undef
+	unless(ref($me) || ref($me = $me->new));
+
     my $fh  = ${*$me}[1];
     my $pid = $me->_doit(1, $fh, @_)
         if(@_);
@@ -114,6 +124,8 @@ sub writer {
     close ${*$me}[0];
     bless $me, ref($fh);
     *{*$me} = *{*$fh};          # Alias self to handle
+    $me->fdopen($fh->fileno,"w")
+	unless defined($me->fileno);
     bless $fh;                  # Really wan't un-bless here
     ${*$me}{'io_pipe_pid'} = $pid
         if defined $pid;
