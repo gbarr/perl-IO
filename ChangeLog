@@ -1,3 +1,9 @@
+Release 1.18 -- Mon Oct 13 1997 <gbarr@pobox.com> (Graham Barr)
+
+	IO.xs, IO::Handle
+	- 1.17 broke compatability with 5.003, small tweaks to restore
+	  compatability
+
 Wed Oct  8 1997 <gbarr@pobox.com> (Graham Barr)
 
 	IO.xs

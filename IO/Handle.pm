@@ -234,7 +234,7 @@ use IO ();	# Load the XS module
 require Exporter;
 @ISA = qw(Exporter);
 
-$VERSION = "1.17";
+$VERSION = "1.18";
 
 @EXPORT_OK = qw(
     autoflush
@@ -545,6 +545,19 @@ sub ioctl {
     my ($io, $op, $val) = @_;
     my $r = ioctl($io, $op, $val);
     defined $r && $r eq "0 but true" ? 0 : $r;
+}
+
+# this sub is for compatability with older releases of IO that used
+# a sub called constant to detemine if a constant existed -- GMB
+#
+# The SEEK_* and _IO?BF constants were the only constants at that time
+# any new code should just chech defined(&CONSTANT_NAME)
+
+sub constant {
+    no strict 'refs';
+    my $name = shift;
+    (($name =~ /^(SEEK_(SET|CUR|END)|_IO[FLN]BF)$/) && defined &{$name})
+	? &{$name}() : undef;
 }
 
 1;

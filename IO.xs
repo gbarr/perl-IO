@@ -88,15 +88,17 @@ newCONSTSUB(stash,name,sv)
     curcop->cop_line = oldline;
 }
 
+#ifndef PerlIO
+#define PerlIO_fileno(f) fileno(f)
+#endif
 
 static int
 io_blocking(f,block)
-PerlIO *f;
+InputStream f;
 int block;
 {
 #if defined(HAS_FCNTL)
     int RETVAL = fcntl(PerlIO_fileno(f), F_GETFL, 0);
-
     if (RETVAL >= 0) {
 	int mode = RETVAL;
 #ifdef O_NONBLOCK
@@ -284,30 +286,6 @@ CODE:
 
 MODULE = IO	PACKAGE = IO::Handle	PREFIX = f
 
-void
-constant(name)
-    char	* name
-PROTOTYPE: $
-CODE:
-{
-    /* this sub is for compatability with older releases of IO that used
-     * a sub called constant to detemine if a constant existed -- GMB
-     */
-    SV *fullname = newSVpv("IO::Handle::",0);
-    GV *gv;
-    CV *cv;
-    SV *sv;
-    sv_catpv(fullname,name);
-    if((gv = gv_fetchpv(SvPV(fullname,na),FALSE, SVt_PVCV)) &&
-		GvCVu(gv) && (cv = GvCV(gv)) &&
-		(sv = cv_const_sv(cv))) {
-	ST(0) = sv;
-    }
-    else
-	ST(0) = &sv_undef;
-    SvREFCNT_dec(fullname);
-    XSRETURN(1);
-}
 
 int
 ungetc(handle, c)
@@ -461,7 +439,7 @@ BOOT:
     /*
      * constant subs for IO::Poll
      */
-    stash = gv_stashpvn("IO::Poll", 8, TRUE);
+    stash = gv_stashpv("IO::Poll", TRUE);
 #ifdef	POLLIN
 	newCONSTSUB(stash,"POLLIN",newSViv(POLLIN));
 #endif
@@ -498,7 +476,7 @@ BOOT:
     /*
      * constant subs for IO::Handle
      */
-    stash = gv_stashpvn("IO::Handle", 10, TRUE);
+    stash = gv_stashpv("IO::Handle", TRUE);
 #ifdef _IOFBF
         newCONSTSUB(stash,"_IOFBF", newSViv(_IOFBF));
 #endif
@@ -520,7 +498,7 @@ BOOT:
     /*
      * constant subs for IO
      */
-    stash = gv_stashpvn("IO", 2, TRUE);
+    stash = gv_stashpv("IO", TRUE);
 #ifdef EINPROGRESS
         newCONSTSUB(stash,"EINPROGRESS", newSViv(EINPROGRESS));
 #endif

@@ -25,3 +25,4 @@ t/io_sock.t
 t/io_tell.t
 t/io_udp.t
 t/io_xs.t
+t/io_const.t
