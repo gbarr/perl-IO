@@ -22,19 +22,25 @@ BEGIN {
 }
 
 $| = 1;
-print "1..3\n";
+print "1..4\n";
 
 use Socket;
 use IO::Socket qw(AF_INET SOCK_DGRAM INADDR_ANY);
 
-$udpa = IO::Socket::INET->new(Proto => 'udp', LocalAddr => 'localhost');
-$udpb = IO::Socket::INET->new(Proto => 'udp', LocalAddr => 'localhost');
+$udpa = IO::Socket::INET->new(Proto => 'udp', LocalAddr => 'localhost')
+	or die "$!";
 
 print "ok 1\n";
 
-$udpa->send("ok 2\n",0,$udpb->sockname);
+$udpb = IO::Socket::INET->new(Proto => 'udp', LocalAddr => 'localhost')
+	or die "$!";
+
+print "ok 2\n";
+
+$udpa->send("ok 3\n",0,$udpb->sockname);
 $udpb->recv($buf="",5);
 print $buf;
-$udpb->send("ok 3\n");
+
+$udpb->send("ok 4\n");
 $udpa->recv($buf="",5);
 print $buf;

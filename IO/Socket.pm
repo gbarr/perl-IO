@@ -23,7 +23,7 @@ require IO::Socket::UNIX;
 
 @ISA = qw(IO::Handle);
 
-$VERSION = "1.20";
+$VERSION = "1.21";
 
 sub import {
     my $pkg = shift;
@@ -128,8 +128,11 @@ sub connect {
 	    }
 	    else {
 		undef $sock;
+		croak "connect: $!";
 	    }
 	}
+	$sock->blocking(1)
+	    if($sock && $blocking);
     };
 
     $sock;

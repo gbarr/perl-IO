@@ -1,8 +1,24 @@
+Patch 1.1801 -- Wed Oct 22 1997 <gbarr@pobox.com> (Graham Barr)
+
+	IO.xs
+	- change #ifdef's to allow compilation with 5.002
+	
+	IO::Socket
+	- Fix to ensure that socket is not returned as non-blocking
+	  unless the user asks for it
+
+	t/io_udp.t
+	- Fix to stop endless loop
+
 Release 1.18 -- Mon Oct 13 1997 <gbarr@pobox.com> (Graham Barr)
 
 	IO.xs, IO::Handle
 	- 1.17 broke compatability with 5.003, small tweaks to restore
 	  compatability
+	
+	t/io_const.t
+	- Added new test to ensure backwards compatability with constants
+	  is not broken
 
 Wed Oct  8 1997 <gbarr@pobox.com> (Graham Barr)
 

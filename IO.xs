@@ -23,7 +23,7 @@ typedef FILE * OutputStream;
 
 #include "patchlevel.h"
 
-#if (PATCHLEVEL == 3) && (SUBVERSION < 22)
+#if (PATCHLEVEL < 3) || ((PATCHLEVEL == 3) && (SUBVERSION < 22))
      /* before 5.003_22 */
 #    define MY_start_subparse(fmt,flags) start_subparse()
 #else
@@ -34,6 +34,10 @@ typedef FILE * OutputStream;
      /* 5.003_23  onwards */
 #    define MY_start_subparse(fmt,flags) start_subparse(fmt,flags)
 #  endif
+#endif
+
+#ifndef gv_stashpvn
+#define gv_stashpvn(str,len,flags) gv_stashpv(str,flags)
 #endif
 
 static int
@@ -439,7 +443,7 @@ BOOT:
     /*
      * constant subs for IO::Poll
      */
-    stash = gv_stashpv("IO::Poll", TRUE);
+    stash = gv_stashpvn("IO::Poll", 8, TRUE);
 #ifdef	POLLIN
 	newCONSTSUB(stash,"POLLIN",newSViv(POLLIN));
 #endif
@@ -476,7 +480,7 @@ BOOT:
     /*
      * constant subs for IO::Handle
      */
-    stash = gv_stashpv("IO::Handle", TRUE);
+    stash = gv_stashpvn("IO::Handle", 10, TRUE);
 #ifdef _IOFBF
         newCONSTSUB(stash,"_IOFBF", newSViv(_IOFBF));
 #endif
@@ -498,7 +502,7 @@ BOOT:
     /*
      * constant subs for IO
      */
-    stash = gv_stashpv("IO", TRUE);
+    stash = gv_stashpvn("IO", 2, TRUE);
 #ifdef EINPROGRESS
         newCONSTSUB(stash,"EINPROGRESS", newSViv(EINPROGRESS));
 #endif
