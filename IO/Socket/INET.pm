@@ -7,14 +7,17 @@
 package IO::Socket::INET;
 
 use strict;
-use vars qw(@ISA $VERSION);
+our(@ISA, $VERSION);
 use IO::Socket;
 use Socket;
 use Carp;
 use Exporter;
+use Errno;
 
 @ISA = qw(IO::Socket);
-$VERSION = "1.24";
+$VERSION = "1.29";
+
+my $EINVAL = exists(&Errno::EINVAL) ? Errno::EINVAL() : 1;
 
 IO::Socket::INET->register_domain( AF_INET );
 
@@ -31,29 +34,35 @@ sub new {
 
 sub _sock_info {
   my($addr,$port,$proto) = @_;
+  my $origport = $port;
   my @proto = ();
   my @serv = ();
 
   $port = $1
 	if(defined $addr && $addr =~ s,:([\w\(\)/]+)$,,);
 
-  if(defined $proto) {
-    @proto = $proto =~ m,\D, ? getprotobyname($proto)
-			     : getprotobynumber($proto);
-
-    $proto = $proto[2] || undef;
+  if(defined $proto  && $proto =~ /\D/) {
+    if(@proto = getprotobyname($proto)) {
+      $proto = $proto[2] || undef;
+    }
+    else {
+      $@ = "Bad protocol '$proto'";
+      return;
+    }
   }
 
   if(defined $port) {
-    $port =~ s,\((\d+)\)$,,;
-
-    my $defport = $1 || undef;
+    my $defport = ($port =~ s,\((\d+)\)$,,) ? $1 : undef;
     my $pnum = ($port =~ m,^(\d+)$,)[0];
 
-    @serv= getservbyname($port, $proto[0] || "")
-	if($port =~ m,\D,);
+    @serv = getservbyname($port, $proto[0] || "")
+	if ($port =~ m,\D,);
 
-    $port = $pnum || $serv[2] || $defport || undef;
+    $port = $serv[2] || $defport || $pnum;
+    unless (defined $port) {
+	$@ = "Bad service '$origport'";
+	return;
+    }
 
     $proto = (getprotobyname($serv[3]))[2] || undef
 	if @serv && !$proto;
@@ -67,10 +76,15 @@ sub _sock_info {
 
 sub _error {
     my $sock = shift;
-    local($!);
-    $@ = join("",ref($sock),": ",@_);
-    close($sock)
+    my $err = shift;
+    {
+      local($!);
+      my $title = ref($sock).": ";
+      $@ = join("", $_[0] =~ /^$title/ ? "" : $title, @_);
+      close($sock)
 	if(defined fileno($sock));
+    }
+    $! = $err;
     return undef;
 }
 
@@ -96,12 +110,13 @@ sub configure {
 
     ($laddr,$lport,$proto) = _sock_info($arg->{LocalAddr},
 					$arg->{LocalPort},
-					$arg->{Proto});
+					$arg->{Proto})
+			or return _error($sock, $!, $@);
 
     $laddr = defined $laddr ? inet_aton($laddr)
 			    : INADDR_ANY;
 
-    return _error($sock,"Bad hostname '",$arg->{LocalAddr},"'")
+    return _error($sock, $EINVAL, "Bad hostname '",$arg->{LocalAddr},"'")
 	unless(defined $laddr);
 
     $arg->{PeerAddr} = $arg->{PeerHost}
@@ -110,68 +125,90 @@ sub configure {
     unless(exists $arg->{Listen}) {
 	($raddr,$rport,$proto) = _sock_info($arg->{PeerAddr},
 					    $arg->{PeerPort},
-					    $proto);
+					    $proto)
+			or return _error($sock, $!, $@);
     }
 
     $proto ||= (getprotobyname('tcp'))[2];
 
     my $pname = (getprotobynumber($proto))[0];
-    $type = $arg->{Type} || $socket_type{$pname};
+    $type = $arg->{Type} || $socket_type{lc $pname};
 
     my @raddr = ();
 
     if(defined $raddr) {
 	@raddr = $sock->_get_addr($raddr, $arg->{MultiHomed});
-	return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
+	return _error($sock, $EINVAL, "Bad hostname '",$arg->{PeerAddr},"'")
 	    unless @raddr;
     }
 
     while(1) {
 
 	$sock->socket(AF_INET, $type, $proto) or
-	    return _error($sock,"$!");
+	    return _error($sock, $!, "$!");
 
-	if ($arg->{Reuse}) {
+        if (defined $arg->{Blocking}) {
+	    defined $sock->blocking($arg->{Blocking})
+		or return _error($sock, $!, "$!");
+	}
+
+	if ($arg->{Reuse} || $arg->{ReuseAddr}) {
 	    $sock->sockopt(SO_REUSEADDR,1) or
-		    return _error($sock,"$!");
+		    return _error($sock, $!, "$!");
+	}
+
+	if ($arg->{ReusePort}) {
+	    $sock->sockopt(SO_REUSEPORT,1) or
+		    return _error($sock, $!, "$!");
+	}
+
+	if ($arg->{Broadcast}) {
+		$sock->sockopt(SO_BROADCAST,1) or
+		    return _error($sock, $!, "$!");
 	}
 
 	if($lport || ($laddr ne INADDR_ANY) || exists $arg->{Listen}) {
 	    $sock->bind($lport || 0, $laddr) or
-		    return _error($sock,"$!");
+		    return _error($sock, $!, "$!");
 	}
 
 	if(exists $arg->{Listen}) {
 	    $sock->listen($arg->{Listen} || 5) or
-		return _error($sock,"$!");
+		return _error($sock, $!, "$!");
 	    last;
 	}
 
+ 	# don't try to connect unless we're given a PeerAddr
+ 	last unless exists($arg->{PeerAddr});
+ 
         $raddr = shift @raddr;
 
-	return _error($sock,'Cannot determine remote port')
+	return _error($sock, $EINVAL, 'Cannot determine remote port')
 		unless($rport || $type == SOCK_DGRAM || $type == SOCK_RAW);
 
 	last
 	    unless($type == SOCK_STREAM || defined $raddr);
 
-	return _error($sock,"Bad hostname '",$arg->{PeerAddr},"'")
+	return _error($sock, $EINVAL, "Bad hostname '",$arg->{PeerAddr},"'")
 	    unless defined $raddr;
 
 #        my $timeout = ${*$sock}{'io_socket_timeout'};
 #        my $before = time() if $timeout;
 
+	undef $@;
         if ($sock->connect(pack_sockaddr_in($rport, $raddr))) {
 #            ${*$sock}{'io_socket_timeout'} = $timeout;
             return $sock;
         }
 
-	return _error($sock,"$!")
+	return _error($sock, $!, $@ || "Timeout")
 	    unless @raddr;
 
 #	if ($timeout) {
 #	    my $new_timeout = $timeout - (time() - $before);
-#	    return _error($sock, "Timeout") if $new_timeout <= 0;
+#	    return _error($sock,
+#                         (exists(&Errno::ETIMEDOUT) ? Errno::ETIMEDOUT() : $EINVAL),
+#                         "Timeout") if $new_timeout <= 0;
 #	    ${*$sock}{'io_socket_timeout'} = $new_timeout;
 #        }
 
@@ -277,10 +314,13 @@ C<IO::Socket::INET> provides.
     Proto	Protocol name (or number)    "tcp" | "udp" | ...
     Type	Socket type                  SOCK_STREAM | SOCK_DGRAM | ...
     Listen	Queue size for listen
-    Reuse	Set SO_REUSEADDR before binding
+    ReuseAddr	Set SO_REUSEADDR before binding
+    Reuse	Set SO_REUSEADDR before binding (deprecated, prefer ReuseAddr)
+    ReusePort	Set SO_REUSEPORT before binding
+    Broadcast	Set SO_BROADCAST before binding
     Timeout	Timeout	value for various operations
-    MultiHomed  Try all adresses for multi-homed hosts
-
+    MultiHomed  Try all addresses for multi-homed hosts
+    Blocking    Determine if connection will be blocking mode
 
 If C<Listen> is defined then a listen socket is created, else if the
 socket type, which is derived from the protocol, is SOCK_STREAM then
@@ -288,7 +328,7 @@ connect() is called.
 
 Although it is not illegal, the use of C<MultiHomed> on a socket
 which is in non-blocking mode is of little use. This is because the
-first connect will never fail with a timeout as the connaect call
+first connect will never fail with a timeout as the connect call
 will not block.
 
 The C<PeerAddr> can be a hostname or the IP-address on the
@@ -306,6 +346,9 @@ parameter will be deduced from C<Proto> if not specified.
 If the constructor is only passed a single argument, it is assumed to
 be a C<PeerAddr> specification.
 
+If C<Blocking> is set to 0, the connection will be in nonblocking mode.
+If not specified it defaults to 1 (blocking mode).
+
 Examples:
 
    $sock = IO::Socket::INET->new(PeerAddr => 'www.perl.org',
@@ -321,13 +364,21 @@ Examples:
 
    $sock = IO::Socket::INET->new('127.0.0.1:25');
 
+   $sock = IO::Socket::INET->new(PeerPort  => 9999,
+                                 PeerAddr  => inet_ntoa(INADDR_BROADCAST),
+                                 Proto     => udp,    
+                                 LocalAddr => 'localhost',
+                                 Broadcast => 1 ) 
+                             or die "Can't bind : $@\n";
 
  NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
- 
+
 As of VERSION 1.18 all IO::Socket objects have autoflush turned on
 by default. This was not the case with earlier releases.
 
  NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
+
+=back
 
 =head2 METHODS
 
@@ -368,7 +419,8 @@ L<Socket>, L<IO::Socket>
 
 =head1 AUTHOR
 
-Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
+Graham Barr. Currently maintained by the Perl Porters.  Please report all
+bugs to <perl5-porters@perl.org>.
 
 =head1 COPYRIGHT
 

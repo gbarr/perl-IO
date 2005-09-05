@@ -6,15 +6,15 @@
 
 package IO::Pipe;
 
-require 5.000;
+use 5.006_001;
 
 use IO::Handle;
 use strict;
-use vars qw($VERSION);
+our($VERSION);
 use Carp;
 use Symbol;
 
-$VERSION = "1.12";
+$VERSION = "1.13";
 
 sub new {
     my $type = shift;
@@ -38,7 +38,7 @@ sub handles {
     (IO::Pipe::End->new(), IO::Pipe::End->new());
 }
 
-my $do_spawn = $^O eq 'os2';
+my $do_spawn = $^O eq 'os2' || $^O eq 'MSWin32';
 
 sub _doit {
     my $me = shift;
@@ -56,8 +56,11 @@ sub _doit {
         if ($do_spawn) {
           require Fcntl;
           $save = IO::Handle->new_from_fd($io, $mode);
+	  my $handle = shift;
           # Close in child:
-          fcntl(shift, Fcntl::F_SETFD(), 1) or croak "fcntl: $!";
+	  unless ($^O eq 'MSWin32') {
+            fcntl($handle, Fcntl::F_SETFD(), 1) or croak "fcntl: $!";
+	  }
           $fh = $rw ? ${*$me}[0] : ${*$me}[1];
         } else {
           shift;
@@ -95,12 +98,13 @@ sub reader {
 	unless(ref($me) || ref($me = $me->new));
 
     my $fh  = ${*$me}[0];
-    my $pid = $me->_doit(0, $fh, @_)
+    my $pid;
+    $pid = $me->_doit(0, $fh, @_)
         if(@_);
 
     close ${*$me}[1];
     bless $me, ref($fh);
-    *{*$me} = *{*$fh};          # Alias self to handle
+    *$me = *$fh;          # Alias self to handle
     $me->fdopen($fh->fileno,"r")
 	unless defined($me->fileno);
     bless $fh;                  # Really wan't un-bless here
@@ -118,12 +122,13 @@ sub writer {
 	unless(ref($me) || ref($me = $me->new));
 
     my $fh  = ${*$me}[1];
-    my $pid = $me->_doit(1, $fh, @_)
+    my $pid;
+    $pid = $me->_doit(1, $fh, @_)
         if(@_);
 
     close ${*$me}[0];
     bless $me, ref($fh);
-    *{*$me} = *{*$fh};          # Alias self to handle
+    *$me = *$fh;          # Alias self to handle
     $me->fdopen($fh->fileno,"w")
 	unless defined($me->fileno);
     bless $fh;                  # Really wan't un-bless here
@@ -135,7 +140,7 @@ sub writer {
 
 package IO::Pipe::End;
 
-use vars qw(@ISA);
+our(@ISA);
 
 @ISA = qw(IO::Handle);
 
@@ -166,15 +171,15 @@ IO::Pipe - supply object methods for pipes
 	if($pid = fork()) { # Parent
 	    $pipe->reader();
 
-	    while(<$pipe> {
-		....
+	    while(<$pipe>) {
+		...
 	    }
 
 	}
 	elsif(defined $pid) { # Child
 	    $pipe->writer();
 
-	    print $pipe ....
+	    print $pipe ...
 	}
 
 	or
@@ -184,21 +189,21 @@ IO::Pipe - supply object methods for pipes
 	$pipe->reader(qw(ls -l));
 
 	while(<$pipe>) {
-	    ....
+	    ...
 	}
 
 =head1 DESCRIPTION
 
-C<IO::Pipe> provides an interface to createing pipes between
+C<IO::Pipe> provides an interface to creating pipes between
 processes.
 
-=head1 CONSTRCUTOR
+=head1 CONSTRUCTOR
 
 =over 4
 
 =item new ( [READER, WRITER] )
 
-Creates a C<IO::Pipe>, which is a reference to a newly created symbol
+Creates an C<IO::Pipe>, which is a reference to a newly created symbol
 (see the C<Symbol> package). C<IO::Pipe::new> optionally takes two
 arguments, which should be objects blessed into C<IO::Handle>, or a
 subclass thereof. These two objects will be used for the system call
@@ -240,7 +245,8 @@ L<IO::Handle>
 
 =head1 AUTHOR
 
-Graham Barr <gbarr@pobox.com>
+Graham Barr. Currently maintained by the Perl Porters.  Please report all
+bugs to <perl5-porters@perl.org>.
 
 =head1 COPYRIGHT
 

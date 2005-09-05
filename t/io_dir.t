@@ -3,11 +3,11 @@
 BEGIN {
     unless(grep /blib/, @INC) {
         chdir 't' if -d 't';
-        @INC = '../lib' if -d '../lib';
+        @INC = '../lib';
     }
     require Config; import Config;
     if ($] < 5.00326 || not $Config{'d_readdir'}) {
-	print "1..0\n";
+	print "1..0 # Skip: readdir() not available\n";
 	exit 0;
     }
 }
@@ -17,50 +17,58 @@ select(STDOUT); $| = 1;
 
 use IO::Dir qw(DIR_UNLINK);
 
+my $tcount = 0;
+
+sub ok {
+  $tcount++;
+  my $not = $_[0] ? '' : 'not ';
+  print "${not}ok $tcount\n";
+}
+
 print "1..10\n";
 
-$dot = new IO::Dir ".";
-print defined($dot) ? "ok" : "not ok", " 1\n";
+my $DIR = $^O eq 'MacOS' ? ":" : ".";
+
+$dot = new IO::Dir $DIR;
+ok(defined($dot));
 
 @a = sort <*>;
 do { $first = $dot->read } while defined($first) && $first =~ /^\./;
-print +(grep { $_ eq $first } @a) ? "ok" : "not ok", " 2\n";
+ok(+(grep { $_ eq $first } @a));
 
 @b = sort($first, (grep {/^[^.]/} $dot->read));
-print +(join("\0", @a) eq join("\0", @b)) ? "ok" : "not ok", " 3\n";
+ok(+(join("\0", @a) eq join("\0", @b)));
 
 $dot->rewind;
 @c = sort grep {/^[^.]/} $dot->read;
-print +(join("\0", @b) eq join("\0", @c)) ? "ok" : "not ok", " 4\n";
+ok(+(join("\0", @b) eq join("\0", @c)));
 
 $dot->close;
 $dot->rewind;
-print defined($dot->read) ? "not ok" : "ok", " 5\n";
+ok(!defined($dot->read));
 
 open(FH,'>X') || die "Can't create x";
 print FH "X";
-close(FH);
+close(FH) or die "Can't close: $!";
 
-tie %dir, IO::Dir, ".";
+tie %dir, IO::Dir, $DIR;
 my @files = keys %dir;
 
 # I hope we do not have an empty dir :-)
-print @files ? "ok" : "not ok", " 6\n";
+ok(scalar @files);
 
 my $stat = $dir{'X'};
-print defined($stat) && UNIVERSAL::isa($stat,'File::stat') && $stat->size == 1
-	? "ok" : "not ok", " 7\n";
+ok(defined($stat) && UNIVERSAL::isa($stat,'File::stat') && $stat->size == 1);
 
 delete $dir{'X'};
 
-print -f 'X' ? "ok" : "not ok", " 8\n";
+ok(-f 'X');
 
-tie %dirx, IO::Dir, ".", DIR_UNLINK;
+tie %dirx, IO::Dir, $DIR, DIR_UNLINK;
 
 my $statx = $dirx{'X'};
-print defined($statx) && UNIVERSAL::isa($statx,'File::stat') && $statx->size == 1
-	? "ok" : "not ok", " 9\n";
+ok(defined($statx) && UNIVERSAL::isa($statx,'File::stat') && $statx->size == 1);
 
 delete $dirx{'X'};
 
-print -f 'X' ? "not ok" : "ok", " 10\n";
+ok(!(-f 'X'));

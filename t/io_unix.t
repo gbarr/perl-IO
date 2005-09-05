@@ -1,10 +1,9 @@
-
 #!./perl
 
 BEGIN {
     unless(grep /blib/, @INC) {
         chdir 't' if -d 't';
-        @INC = '../lib' if -d '../lib';
+        @INC = '../lib';
     }
 }
 
@@ -12,24 +11,41 @@ use Config;
 
 BEGIN {
     if(-d "lib" && -f "TEST") {
-        if ( ($Config{'extensions'} !~ /\bSocket\b/ ||
-              $Config{'extensions'} !~ /\bIO\b/)    &&
-              !(($^O eq 'VMS') && $Config{d_socket})) {
-            print "1..0\n";
-            exit 0;
+	my $reason;
+	if (! $Config{'d_fork'}) {
+	    $reason = 'no fork';
+	}
+	elsif ($Config{'extensions'} !~ /\bSocket\b/) {
+	    $reason = 'Socket extension unavailable';
+	}
+	elsif ($Config{'extensions'} !~ /\bIO\b/) {
+	    $reason = 'IO extension unavailable';
+	}
+	elsif ($^O eq 'os2') {
+	    require IO::Socket;
+
+	    eval {IO::Socket::pack_sockaddr_un('/foo/bar') || 1}
+	      or $@ !~ /not implemented/ or
+		$reason = 'compiled without TCP/IP stack v4';
+	} elsif ($^O =~ m/^(?:qnx|nto|vos)$/ ) {
+	    $reason = 'Not implemented';
+	}
+	if ($reason) {
+	    print "1..0 # Skip: $reason\n";
+	    exit 0;
         }
     }
 }
 
-$PATH = "/tmp/sock-$$";
+$PATH = "sock-$$";
 
 # Test if we can create the file within the tmp directory
-if (-e $PATH or not open(TEST, ">$PATH")) {
-    print "1..0\n";
+if (-e $PATH or not open(TEST, ">$PATH") and $^O ne 'os2') {
+    print "1..0 # Skip: cannot open '$PATH' for write\n";
     exit 0;
 }
 close(TEST);
-unlink($PATH) or die "Can't unlink $PATH: $!";
+unlink($PATH) or $^O eq 'os2' or die "Can't unlink $PATH: $!";
 
 # Start testing
 $| = 1;
@@ -43,19 +59,26 @@ print "ok 1\n";
 if($pid = fork()) {
 
     $sock = $listen->accept();
-    print "ok 2\n";
 
-    print $sock->getline();
+    if (defined $sock) {
+	print "ok 2\n";
 
-    print $sock "ok 4\n";
+	print $sock->getline();
 
-    $sock->close;
+	print $sock "ok 4\n";
 
-    waitpid($pid,0);
-    unlink($PATH) || warn "Can't unlink $PATH: $!";
+	$sock->close;
 
-    print "ok 5\n";
+	waitpid($pid,0);
+	unlink($PATH) || $^O eq 'os2' || warn "Can't unlink $PATH: $!";
 
+	print "ok 5\n";
+    } else {
+	print "# accept() failed: $!\n";
+	for (2..5) {
+	    print "not ok $_ # accept failed\n";
+	}
+    }
 } elsif(defined $pid) {
 
     $sock = IO::Socket::UNIX->new(Peer => $PATH) or die "$!";

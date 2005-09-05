@@ -1,4 +1,3 @@
-
 package IO::Handle;
 
 =head1 NAME
@@ -20,6 +19,7 @@ IO::Handle - supply object methods for I/O handles
         $io->print("Some text\n");
     }
 
+    # setvbuf is not available by default on Perls 5.8.0 and later.
     use IO::Handle '_IOLBF';
     $io->setvbuf($buffer_var, _IOLBF, 1024);
 
@@ -48,7 +48,7 @@ Creates a new C<IO::Handle> object.
 
 =item new_from_fd ( FD, MODE )
 
-Creates a C<IO::Handle> like C<new> does.
+Creates an C<IO::Handle> like C<new> does.
 It requires two parameters, which are passed to the method C<fdopen>;
 if the fdopen fails, the object is destroyed. Otherwise, it is returned
 to the caller.
@@ -71,7 +71,7 @@ corresponding built-in functions:
     $io->printf ( FMT, [ARGS] )
     $io->stat
     $io->sysread ( BUF, LEN, [OFFSET] )
-    $io->syswrite ( BUF, LEN, [OFFSET] )
+    $io->syswrite ( BUF, [LEN, [OFFSET]] )
     $io->truncate ( LEN )
 
 See L<perlvar> for complete descriptions of each of the following
@@ -100,28 +100,31 @@ The following methods are not supported on a per-filehandle basis.
 
 Furthermore, for doing normal I/O you might need these:
 
-=over 
+=over 4
 
 =item $io->fdopen ( FD, MODE )
 
 C<fdopen> is like an ordinary C<open> except that its first parameter
-is not a filename but rather a file handle name, a IO::Handle object,
+is not a filename but rather a file handle name, an IO::Handle object,
 or a file descriptor number.
 
 =item $io->opened
 
-Returns true if the object is currently a valid file descriptor.
+Returns true if the object is currently a valid file descriptor, false
+otherwise.
 
 =item $io->getline
 
 This works like <$io> described in L<perlop/"I/O Operators">
-except that it's more readable and can be safely called in an
-array context but still returns just one line.
+except that it's more readable and can be safely called in a
+list context but still returns just one line.  If used as the conditional
++within a C<while> or C-style C<for> loop, however, you will need to
++emulate the functionality of <$io> with C<< defined($_ = $io->getline) >>.
 
 =item $io->getlines
 
-This works like <$io> when called in an array context to
-read all the remaining lines in a file, except that it's more readable.
+This works like <$io> when called in a list context to read all
+the remaining lines in a file, except that it's more readable.
 It will also croak() if accidentally called in a scalar context.
 
 =item $io->ungetc ( ORD )
@@ -139,31 +142,37 @@ called C<format_write>.
 =item $io->error
 
 Returns a true value if the given handle has experienced any errors
-since it was opened or since the last call to C<clearerr>.
+since it was opened or since the last call to C<clearerr>, or if the
+handle is invalid. It only returns false for a valid handle with no
+outstanding errors.
 
 =item $io->clearerr
 
-Clear the given handle's error indicator.
+Clear the given handle's error indicator. Returns -1 if the handle is
+invalid, 0 otherwise.
 
 =item $io->sync
 
 C<sync> synchronizes a file's in-memory state  with  that  on the
 physical medium. C<sync> does not operate at the perlio api level, but
-operates on the file descriptor, this means that any data held at the
-perlio api level will not be synchronized. To synchronize data that is
-buffered at the perlio api level you must use the flush method. C<sync>
-is not implemented on all platforms. See L<fsync(3c)>.
+operates on the file descriptor (similar to sysread, sysseek and
+systell). This means that any data held at the perlio api level will not
+be synchronized. To synchronize data that is buffered at the perlio api
+level you must use the flush method. C<sync> is not implemented on all
+platforms. Returns "0 but true" on success, C<undef> on error, C<undef>
+for an invalid handle. See L<fsync(3c)>.
 
 =item $io->flush
 
 C<flush> causes perl to flush any buffered data at the perlio api level.
 Any unread data in the buffer will be discarded, and any unwritten data
-will be written to the underlying file descriptor.
+will be written to the underlying file descriptor. Returns "0 but true"
+on success, C<undef> on error.
 
 =item $io->printflush ( ARGS )
 
 Turns on autoflush, print ARGS and then restores the autoflush status of the
-C<IO::Handle> object.
+C<IO::Handle> object. Returns the return value from print.
 
 =item $io->blocking ( [ BOOL ] )
 
@@ -183,29 +192,41 @@ C<IO::Handle::setbuf> and C<IO::Handle::setvbuf> set the buffering
 policy for an IO::Handle.  The calling sequences for the Perl functions
 are the same as their C counterparts--including the constants C<_IOFBF>,
 C<_IOLBF>, and C<_IONBF> for setvbuf()--except that the buffer parameter
-specifies a scalar variable to use as a buffer.  WARNING: A variable
-used as a buffer by C<setbuf> or C<setvbuf> must not be modified in any
-way until the IO::Handle is closed or C<setbuf> or C<setvbuf> is called
-again, or memory corruption may result! Note that you need to import
-the constants C<_IOFBF>, C<_IOLBF>, and C<_IONBF> explicitly.
+specifies a scalar variable to use as a buffer. You should only
+change the buffer before any I/O, or immediately after calling flush.
+
+WARNING: The IO::Handle::setvbuf() is not available by default on
+Perls 5.8.0 and later because setvbuf() is rather specific to using
+the stdio library, while Perl prefers the new perlio subsystem instead.
+
+WARNING: A variable used as a buffer by C<setbuf> or C<setvbuf> B<must not
+be modified> in any way until the IO::Handle is closed or C<setbuf> or
+C<setvbuf> is called again, or memory corruption may result! Remember that
+the order of global destruction is undefined, so even if your buffer
+variable remains in scope until program termination, it may be undefined
+before the file IO::Handle is closed. Note that you need to import the
+constants C<_IOFBF>, C<_IOLBF>, and C<_IONBF> explicitly. Like C, setbuf
+returns nothing. setvbuf returns "0 but true", on success, C<undef> on
+failure.
 
 Lastly, there is a special method for working under B<-T> and setuid/gid
 scripts:
 
-=over
+=over 4
 
 =item $io->untaint
 
 Marks the object as taint-clean, and as such data read from it will also
 be considered taint-clean. Note that this is a very trusting action to
 take, and appropriate consideration for the data source and potential
-vulnerability should be kept in mind.
+vulnerability should be kept in mind. Returns 0 on success, -1 if setting
+the taint-clean flag failed. (eg invalid handle)
 
 =back
 
 =head1 NOTE
 
-A C<IO::Handle> object is a reference to a symbol/GLOB reference (see
+An C<IO::Handle> object is a reference to a symbol/GLOB reference (see
 the C<Symbol> package).  Some modules that
 inherit from C<IO::Handle> may want to keep object related variables
 in the hash table part of the GLOB. In an attempt to prevent modules
@@ -232,9 +253,9 @@ Derived from FileHandle.pm by Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
 
 =cut
 
-require 5.000;
+use 5.006_001;
 use strict;
-use vars qw($VERSION @EXPORT_OK @ISA);
+our($VERSION, @EXPORT_OK, @ISA);
 use Carp;
 use Symbol;
 use SelectSaver;
@@ -243,7 +264,8 @@ use IO ();	# Load the XS module
 require Exporter;
 @ISA = qw(Exporter);
 
-$VERSION = "1.21";
+$VERSION = "1.25";
+$VERSION = eval $VERSION;
 
 @EXPORT_OK = qw(
     autoflush
@@ -417,14 +439,19 @@ sub sysread {
 }
 
 sub write {
-    @_ == 3 || @_ == 4 or croak 'usage: $io->write(BUF, LEN [, OFFSET])';
+    @_ >= 2 && @_ <= 4 or croak 'usage: $io->write(BUF [, LEN [, OFFSET]])';
     local($\) = "";
+    $_[2] = length($_[1]) unless defined $_[2];
     print { $_[0] } substr($_[1], $_[3] || 0, $_[2]);
 }
 
 sub syswrite {
-    @_ == 3 || @_ == 4 or croak 'usage: $io->syswrite(BUF, LEN [, OFFSET])';
-    syswrite($_[0], $_[1], $_[2], $_[3] || 0);
+    @_ >= 2 && @_ <= 4 or croak 'usage: $io->syswrite(BUF [, LEN [, OFFSET]])';
+    if (defined($_[2])) {
+	syswrite($_[0], $_[1], $_[2], $_[3] || 0);
+    } else {
+	syswrite($_[0], $_[1]);
+    }
 }
 
 sub stat {
@@ -468,46 +495,48 @@ sub input_record_separator {
 }
 
 sub input_line_number {
-    my $now  = select;
-    my $keep = $.;
-    my $tell = tell qualify($_[0], caller) if ref($_[0]);
+    local $.;
+    () = tell qualify($_[0], caller) if ref($_[0]);
     my $prev = $.;
     $. = $_[1] if @_ > 1;
-    $tell = tell $now;
-    $. = $keep;
     $prev;
 }
 
 sub format_page_number {
-    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
+    my $old;
+    $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $%;
     $% = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_lines_per_page {
-    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
+    my $old;
+    $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $=;
     $= = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_lines_left {
-    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
+    my $old;
+    $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $-;
     $- = $_[1] if @_ > 1;
     $prev;
 }
 
 sub format_name {
-    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
+    my $old;
+    $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $~;
     $~ = qualify($_[1], caller) if @_ > 1;
     $prev;
 }
 
 sub format_top_name {
-    my $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
+    my $old;
+    $old = new SelectSaver qualify($_[0], caller) if ref($_[0]);
     my $prev = $^;
     $^ = qualify($_[1], caller) if @_ > 1;
     $prev;
@@ -550,18 +579,18 @@ sub format_write {
     }
 }
 
+# XXX undocumented
 sub fcntl {
     @_ == 3 || croak 'usage: $io->fcntl( OP, VALUE );';
-    my ($io, $op, $val) = @_;
-    my $r = fcntl($io, $op, $val);
-    defined $r && $r eq "0 but true" ? 0 : $r;
+    my ($io, $op) = @_;
+    return fcntl($io, $op, $_[2]);
 }
 
+# XXX undocumented
 sub ioctl {
     @_ == 3 || croak 'usage: $io->ioctl( OP, VALUE );';
-    my ($io, $op, $val) = @_;
-    my $r = ioctl($io, $op, $val);
-    defined $r && $r eq "0 but true" ? 0 : $r;
+    my ($io, $op) = @_;
+    return ioctl($io, $op, $_[2]);
 }
 
 # this sub is for compatability with older releases of IO that used
@@ -578,11 +607,12 @@ sub constant {
 }
 
 
-# so that flush.pl can be depriciated
+# so that flush.pl can be deprecated
 
 sub printflush {
     my $io = shift;
-    my $old = new SelectSaver qualify($io, caller) if ref($io);
+    my $old;
+    $old = new SelectSaver qualify($io, caller) if ref($io);
     local $| = 1;
     if(ref($io)) {
         print $io @_;

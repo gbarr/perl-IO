@@ -4,6 +4,9 @@
  * modify it under the same terms as Perl itself.
  */
 
+#define PERL_EXT_IO
+
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #define PERLIO_NOT_STDIO 1
 #include "perl.h"
@@ -16,7 +19,20 @@
 #  include <fcntl.h>
 #endif
 
+#ifndef SIOCATMARK
+#   ifdef I_SYS_SOCKIO
+#       include <sys/sockio.h>
+#   endif
+#endif
+
 #ifdef PerlIO
+#if defined(MACOS_TRADITIONAL) && defined(USE_SFIO)
+#define PERLIO_IS_STDIO 1
+#undef setbuf
+#undef setvbuf
+#define setvbuf		_stdsetvbuf
+#define setbuf(f,b)	( __sf_setbuf(f,b) )
+#endif
 typedef int SysRet;
 typedef PerlIO * InputStream;
 typedef PerlIO * OutputStream;
@@ -27,186 +43,122 @@ typedef FILE * InputStream;
 typedef FILE * OutputStream;
 #endif
 
-#include "patchlevel.h"
-
-#if (PATCHLEVEL < 3) || ((PATCHLEVEL == 3) && (SUBVERSION < 22))
-     /* before 5.003_22 */
-#    define MY_start_subparse(fmt,flags) start_subparse()
-#else
-#  if (PATCHLEVEL == 3) && (SUBVERSION == 22)
-     /* 5.003_22 */
-#    define MY_start_subparse(fmt,flags) start_subparse(flags)
-#  else
-     /* 5.003_23  onwards */
-#    define MY_start_subparse(fmt,flags) start_subparse(fmt,flags)
-#  endif
-#endif
+#define MY_start_subparse(fmt,flags) start_subparse(fmt,flags)
 
 #ifndef gv_stashpvn
 #define gv_stashpvn(str,len,flags) gv_stashpv(str,flags)
 #endif
 
+#ifndef __attribute__noreturn__
+#  define __attribute__noreturn__
+#endif
+
+#ifndef NORETURN_FUNCTION_END
+# define NORETURN_FUNCTION_END /* NOT REACHED */ return 0
+#endif
+
+static int not_here(const char *s) __attribute__noreturn__;
 static int
-not_here(s)
-char *s;
+not_here(const char *s)
 {
     croak("%s not implemented on this architecture", s);
-    return -1;
+    NORETURN_FUNCTION_END;
 }
 
-#ifndef newCONSTSUB
-/*
- * Define an XSUB that returns a constant scalar. The resulting structure is
- * identical to that created by the parser when it parses code like :
- *
- *    sub xyz () { 123 }
- *
- * This allows the constants from the XSUB to be inlined.
- *
- * !!! THIS SHOULD BE ADDED INTO THE CORE CODE !!!!
- *
- */
- 
-static void
-newCONSTSUB(stash,name,sv)
-    HV *stash;
-    char *name;
-    SV *sv;
-{
-#ifdef dTHR
-    dTHR;
-#endif
-    U32 oldhints = hints;
-    HV *old_cop_stash = curcop->cop_stash;
-    HV *old_curstash = curstash;
-    line_t oldline = curcop->cop_line;
-    curcop->cop_line = copline;
-
-    hints &= ~HINT_BLOCK_SCOPE;
-    if(stash)
-	curstash = curcop->cop_stash = stash;
-
-    newSUB(
-	MY_start_subparse(FALSE, 0),
-	newSVOP(OP_CONST, 0, newSVpv(name,0)),
-	newSVOP(OP_CONST, 0, &sv_no),	/* SvPV(&sv_no) == "" -- GMB */
-	newSTATEOP(0, Nullch, newSVOP(OP_CONST, 0, sv))
-    );
-
-    hints = oldhints;
-    curcop->cop_stash = old_cop_stash;
-    curstash = old_curstash;
-    curcop->cop_line = oldline;
-}
-#endif
 
 #ifndef PerlIO
 #define PerlIO_fileno(f) fileno(f)
 #endif
 
 static int
-io_blocking(f,block)
-InputStream f;
-int block;
+io_blocking(pTHX_ InputStream f, int block)
 {
+#if defined(HAS_FCNTL)
     int RETVAL;
     if(!f) {
 	errno = EBADF;
 	return -1;
     }
-#if defined(HAS_FCNTL)
     RETVAL = fcntl(PerlIO_fileno(f), F_GETFL, 0);
     if (RETVAL >= 0) {
 	int mode = RETVAL;
+	int newmode = mode;
 #ifdef O_NONBLOCK
-	/* POSIX style */ 
-#if defined(O_NDELAY) && O_NDELAY != O_NONBLOCK
-	/* Ooops has O_NDELAY too - make sure we don't 
-	 * get SysV behaviour by mistake
-	 */
-	RETVAL = RETVAL & O_NONBLOCK ? 0 : 1;
+	/* POSIX style */
 
-	if ((mode & O_NDELAY) || ((block == 0) && !(mode & O_NONBLOCK))) {
-	    int ret;
-	    mode = (mode & ~O_NDELAY) | O_NONBLOCK;
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	}
-	else if ((mode & O_NDELAY) || ((block > 0) && (mode & O_NONBLOCK))) {
-	    int ret;
-	    mode &= ~(O_NONBLOCK | O_NDELAY);
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	}
-#else
-	/* Standard POSIX */ 
-	RETVAL = RETVAL & O_NONBLOCK ? 0 : 1;
+# ifndef O_NDELAY
+#  define O_NDELAY O_NONBLOCK
+# endif
+	/* Note: UNICOS and UNICOS/mk a F_GETFL returns an O_NDELAY
+	 * after a successful F_SETFL of an O_NONBLOCK. */
+	RETVAL = RETVAL & (O_NONBLOCK | O_NDELAY) ? 0 : 1;
 
-	if ((block == 0) && !(mode & O_NONBLOCK)) {
-	    int ret;
-	    mode |= O_NONBLOCK;
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	 }
-	else if ((block > 0) && (mode & O_NONBLOCK)) {
-	    int ret;
-	    mode &= ~O_NONBLOCK;
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	 }
-#endif 
+	if (block == 0) {
+	    newmode &= ~O_NDELAY;
+	    newmode |= O_NONBLOCK;
+	} else if (block > 0) {
+	    newmode &= ~(O_NDELAY|O_NONBLOCK);
+	}
 #else
 	/* Not POSIX - better have O_NDELAY or we can't cope.
 	 * for BSD-ish machines this is an acceptable alternative
-	 * for SysV we can't tell "would block" from EOF but that is 
+	 * for SysV we can't tell "would block" from EOF but that is
 	 * the way SysV is...
 	 */
 	RETVAL = RETVAL & O_NDELAY ? 0 : 1;
 
-	if ((block == 0) && !(mode & O_NDELAY)) {
-	    int ret;
-	    mode |= O_NDELAY;
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	 }
-	else if ((block > 0) && (mode & O_NDELAY)) {
-	    int ret;
-	    mode &= ~O_NDELAY;
-	    ret = fcntl(PerlIO_fileno(f),F_SETFL,mode);
-	    if(ret < 0)
-		RETVAL = ret;
-	 }
+	if (block == 0) {
+	    newmode |= O_NDELAY;
+	} else if (block > 0) {
+	    newmode &= ~O_NDELAY;
+	}
 #endif
+	if (newmode != mode) {
+	    const int ret = fcntl(PerlIO_fileno(f),F_SETFL,newmode);
+	    if (ret < 0)
+		RETVAL = ret;
+	}
     }
     return RETVAL;
 #else
- return -1;
+    return -1;
 #endif
 }
 
 MODULE = IO	PACKAGE = IO::Seekable	PREFIX = f
 
-SV *
+void
 fgetpos(handle)
 	InputStream	handle
     CODE:
 	if (handle) {
-	    Fpos_t pos;
 #ifdef PerlIO
-	    PerlIO_getpos(handle, &pos);
+	    ST(0) = sv_newmortal();
+#if PERL_VERSION < 8
+	    Fpos_t pos;
+	    if (PerlIO_getpos(handle, &pos) != 0) {
+		ST(0) = &PL_sv_undef;
+	    }
+	    else {
+		sv_setpvn(ST(0), (char *)&pos, sizeof(Fpos_t));
+	    }
 #else
-	    fgetpos(handle, &pos);
+	    if (PerlIO_getpos(handle, ST(0)) != 0) {
+		ST(0) = &PL_sv_undef;
+	    }
 #endif
-	    ST(0) = sv_2mortal(newSVpv((char*)&pos, sizeof(Fpos_t)));
+#else
+	    Fpos_t pos;
+	    if (fgetpos(handle, &pos)) {
+		ST(0) = &PL_sv_undef;
+	    } else {
+		ST(0) = sv_2mortal(newSVpvn((char*)&pos, sizeof(Fpos_t)));
+	    }
+#endif
 	}
 	else {
-	    ST(0) = &sv_undef;
 	    errno = EINVAL;
+	    ST(0) = &PL_sv_undef;
 	}
 
 SysRet
@@ -214,12 +166,33 @@ fsetpos(handle, pos)
 	InputStream	handle
 	SV *		pos
     CODE:
-	if (handle)
+	if (handle) {
 #ifdef PerlIO
-	    RETVAL = PerlIO_setpos(handle, (Fpos_t*)SvPVX(pos));
+#if PERL_VERSION < 8
+	    char *p;
+	    STRLEN len;
+	    if (SvOK(pos) && (p = SvPV(pos,len)) && len == sizeof(Fpos_t)) {
+		RETVAL = PerlIO_setpos(handle, (Fpos_t*)p);
+	    }
+	    else {
+		RETVAL = -1;
+		errno = EINVAL;
+	    }
 #else
-	    RETVAL = fsetpos(handle, (Fpos_t*)SvPVX(pos));
+	    RETVAL = PerlIO_setpos(handle, pos);
 #endif
+#else
+	    char *p;
+	    STRLEN len;
+	    if ((p = SvPV(pos,len)) && len == sizeof(Fpos_t)) {
+		RETVAL = fsetpos(handle, (Fpos_t*)p);
+	    }
+	    else {
+		RETVAL = -1;
+		errno = EINVAL;
+	    }
+#endif
+	}
 	else {
 	    RETVAL = -1;
 	    errno = EINVAL;
@@ -229,9 +202,9 @@ fsetpos(handle, pos)
 
 MODULE = IO	PACKAGE = IO::File	PREFIX = f
 
-SV *
+void
 new_tmpfile(packname = "IO::File")
-    char *		packname
+    char *	packname
     PREINIT:
 	OutputStream fp;
 	GV *gv;
@@ -249,26 +222,26 @@ new_tmpfile(packname = "IO::File")
 	    SvREFCNT_dec(gv);   /* undo increment in newRV() */
 	}
 	else {
-	    ST(0) = &sv_undef;
+	    ST(0) = &PL_sv_undef;
 	    SvREFCNT_dec(gv);
 	}
 
 MODULE = IO	PACKAGE = IO::Poll
 
-void   
+void
 _poll(timeout,...)
 	int timeout;
 PPCODE:
 {
 #ifdef HAS_POLL
-    int nfd = (items - 1) / 2;
+    const int nfd = (items - 1) / 2;
     SV *tmpsv = NEWSV(999,nfd * sizeof(struct pollfd));
     struct pollfd *fds = (struct pollfd *)SvPVX(tmpsv);
     int i,j,ret;
     for(i=1, j=0  ; j < nfd ; j++) {
 	fds[j].fd = SvIV(ST(i));
 	i++;
-	fds[j].events = SvIV(ST(i));
+	fds[j].events = (short)SvIV(ST(i));
 	i++;
 	fds[j].revents = 0;
     }
@@ -294,7 +267,7 @@ io_blocking(handle,blk=-1)
 PROTOTYPE: $;$
 CODE:
 {
-    int ret = io_blocking(handle, items == 1 ? -1 : blk ? 1 : 0);
+    const int ret = io_blocking(aTHX_ handle, items == 1 ? -1 : blk ? 1 : 0);
     if(ret >= 0)
 	XSRETURN_IV(ret);
     else
@@ -302,7 +275,6 @@ CODE:
 }
 
 MODULE = IO	PACKAGE = IO::Handle	PREFIX = f
-
 
 int
 ungetc(handle, c)
@@ -397,34 +369,47 @@ fflush(handle)
 	RETVAL
 
 void
-setbuf(handle, buf)
+setbuf(handle, ...)
 	OutputStream	handle
-	char *		buf = SvPOK(ST(1)) ? sv_grow(ST(1), BUFSIZ) : 0;
     CODE:
 	if (handle)
 #ifdef PERLIO_IS_STDIO
+        {
+	    char *buf = items == 2 && SvPOK(ST(1)) ?
+	      sv_grow(ST(1), BUFSIZ) : 0;
 	    setbuf(handle, buf);
+	}
 #else
 	    not_here("IO::Handle::setbuf");
 #endif
 
 SysRet
-setvbuf(handle, buf, type, size)
-	OutputStream	handle
-	char *		buf = SvPOK(ST(1)) ? sv_grow(ST(1), SvIV(ST(3))) : 0;
-	int		type
-	int		size
+setvbuf(...)
     CODE:
-/* Should check HAS_SETVBUF once Configure tests for that */
-#if defined(PERLIO_IS_STDIO) && defined(_IOFBF)
+	if (items != 4)
+            Perl_croak(aTHX_ "Usage: IO::Handle::setvbuf(handle, buf, type, size)");
+#if defined(PERLIO_IS_STDIO) && defined(_IOFBF) && defined(HAS_SETVBUF)
+    {
+        OutputStream	handle = 0;
+	char *		buf = SvPOK(ST(1)) ? sv_grow(ST(1), SvIV(ST(3))) : 0;
+	int		type;
+	int		size;
+
+	if (items == 4) {
+	    handle = IoOFP(sv_2io(ST(0)));
+	    buf    = SvPOK(ST(1)) ? sv_grow(ST(1), SvIV(ST(3))) : 0;
+	    type   = (int)SvIV(ST(2));
+	    size   = (int)SvIV(ST(3));
+	}
 	if (!handle)			/* Try input stream. */
 	    handle = IoIFP(sv_2io(ST(0)));
-	if (handle)
+	if (items == 4 && handle)
 	    RETVAL = setvbuf(handle, buf, type, size);
 	else {
 	    RETVAL = -1;
 	    errno = EINVAL;
 	}
+    }
 #else
 	RETVAL = (SysRet) not_here("IO::Handle::setvbuf");
 #endif
@@ -449,6 +434,39 @@ fsync(handle)
     OUTPUT:
 	RETVAL
 
+
+MODULE = IO	PACKAGE = IO::Socket
+
+SysRet
+sockatmark (sock)
+   InputStream sock
+   PROTOTYPE: $
+   PREINIT:
+     int fd;
+   CODE:
+   {
+     fd = PerlIO_fileno(sock);
+#ifdef HAS_SOCKATMARK
+     RETVAL = sockatmark(fd);
+#else
+     {
+       int flag = 0;
+#   ifdef SIOCATMARK
+#     if defined(NETWARE) || defined(WIN32)
+       if (ioctl(fd, SIOCATMARK, (void*)&flag) != 0)
+#     else
+       if (ioctl(fd, SIOCATMARK, &flag) != 0)
+#     endif
+	 XSRETURN_UNDEF;
+#   else
+       not_here("IO::Socket::atmark");
+#   endif
+       RETVAL = flag;
+     }
+#endif
+   }
+   OUTPUT:
+     RETVAL
 
 BOOT:
 {
@@ -512,11 +530,5 @@ BOOT:
 #ifdef SEEK_END
         newCONSTSUB(stash,"SEEK_END", newSViv(SEEK_END));
 #endif
-    /*
-     * constant subs for IO
-     */
-    stash = gv_stashpvn("IO", 2, TRUE);
-#ifdef EINPROGRESS
-        newCONSTSUB(stash,"EINPROGRESS", newSViv(EINPROGRESS));
-#endif
 }
+

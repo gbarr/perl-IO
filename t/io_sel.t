@@ -1,16 +1,16 @@
-#!./perl
+#!./perl -w
 
 BEGIN {
     unless(grep /blib/, @INC) {
         chdir 't' if -d 't';
-        @INC = '../lib' if -d '../lib';
+        @INC = '../lib';
     }
 }
 
 select(STDERR); $| = 1;
 select(STDOUT); $| = 1;
 
-print "1..21\n";
+print "1..23\n";
 
 use IO::Select 1.09;
 
@@ -49,6 +49,14 @@ $sel->remove([\*STDOUT, 5]);
 print "not " unless $sel->count == 0 && !defined($sel->bits);
 print "ok 9\n";
 
+if ( grep $^O eq $_, qw(MSWin32 NetWare dos VMS riscos beos) ) {
+    for (10 .. 15) { 
+        print "ok $_ # skip: 4-arg select is only valid on sockets\n"
+    }
+    $sel->add(\*STDOUT);  # update
+    goto POST_SOCKET;
+}
+
 @a = $sel->can_read();  # should return imediately
 print "not " unless @a == 0;
 print "ok 10\n";
@@ -77,6 +85,7 @@ print "ok 14\n";
 $fd = $w->[0];
 print $fd "ok 15\n";
 
+POST_SOCKET:
 # Test new exists() method
 $sel->exists(\*STDIN) and print "not ";
 print "ok 16\n";
@@ -106,3 +115,24 @@ print "ok 20\n";
 $sel->remove($sel->handles);
 print "not " unless $sel->count == 0 && !defined($sel->bits);
 print "ok 21\n";
+
+# check warnings
+$SIG{__WARN__} = sub { 
+    ++ $w 
+      if $_[0] =~ /^Call to deprecated method 'has_error', use 'has_exception'/ ;
+    } ;
+$w = 0 ;
+{
+no warnings 'IO::Select' ;
+IO::Select::has_error();
+}
+print "not " unless $w == 0 ;
+$w = 0 ;
+print "ok 22\n" ;
+{
+use warnings 'IO::Select' ;
+IO::Select::has_error();
+}
+print "not " unless $w == 1 ;
+$w = 0 ;
+print "ok 23\n" ;

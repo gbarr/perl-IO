@@ -1,9 +1,15 @@
 #!./perl
 
+my $perl;
+
 BEGIN {
     unless(grep /blib/, @INC) {
+	$perl = './perl';
 	chdir 't' if -d 't';
-	@INC = '../lib' if -d '../lib';
+	@INC = '../lib';
+    }
+    else {
+	$perl = $^X;
     }
 }
 
@@ -11,8 +17,15 @@ use Config;
 
 BEGIN {
     if(-d "lib" && -f "TEST") {
-        if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
-	    print "1..0\n";
+	my $reason;
+	if (! $Config{'d_fork'}) {
+	    $reason = 'no fork';
+	}
+	elsif ($Config{'extensions'} !~ /\bIO\b/) {
+	    $reason = 'IO extension unavailable';
+	}
+	if ($reason) {
+	    print "1..0 # Skip: $reason\n";
 	    exit 0;
         }
     }
@@ -20,10 +33,11 @@ BEGIN {
 
 use IO::Pipe;
 
+
 $| = 1;
 print "1..10\n";
 
-$pipe = new IO::Pipe->reader($^X, '-e', 'print "not ok 1\n"');
+$pipe = new IO::Pipe->reader($perl, '-e', 'print "not ok 1\n"');
 while (<$pipe>) {
   s/^not //;
   print;
@@ -32,10 +46,17 @@ $pipe->close or print "# \$!=$!\nnot ";
 print "ok 2\n";
 
 $cmd = 'BEGIN{$SIG{ALRM} = sub {print "not ok 4\n"; exit}; alarm 10} s/not //';
-$pipe = new IO::Pipe->writer($^X, '-pe', $cmd);
+$pipe = new IO::Pipe->writer($perl, '-pe', $cmd);
 print $pipe "not ok 3\n" ;
 $pipe->close or print "# \$!=$!\nnot ";
 print "ok 4\n";
+
+# Check if can fork with dynamic extensions (bug in CRT):
+if ($^O eq 'os2' and
+    system "$^X -I../lib -MOpcode -e 'defined fork or die'  > /dev/null 2>&1") {
+    print "ok $_ # skipped: broken fork\n" for 5..10;
+    exit 0;
+}
 
 $pipe = new IO::Pipe;
 
@@ -100,6 +121,7 @@ sub broken_pipe {
 print $pipe "not ok 9\n";
 $pipe->close;
 
+sleep 1;
 
 print "ok 10\n";
 

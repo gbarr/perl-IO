@@ -3,7 +3,7 @@
 BEGIN {
     unless(grep /blib/, @INC) {
 	chdir 't' if -d 't';
-	@INC = '../lib' if -d '../lib';
+	@INC = '../lib';
     }
 }
 
@@ -11,10 +11,18 @@ use Config;
 
 BEGIN {
     if(-d "lib" && -f "TEST") {
-        if ( ($Config{'extensions'} !~ /\bSocket\b/ ||
-              $Config{'extensions'} !~ /\bIO\b/)    &&
-              !(($^O eq 'VMS') && $Config{d_socket})) {
-	    print "1..0\n";
+	my $reason;
+	if (! $Config{'d_fork'}) {
+	    $reason = 'no fork';
+	}
+	elsif ($Config{'extensions'} !~ /\bSocket\b/) {
+	    $reason = 'Socket extension unavailable';
+	}
+	elsif ($Config{'extensions'} !~ /\bIO\b/) {
+	    $reason = 'IO extension unavailable';
+	}
+	if ($reason) {
+	    print "1..0 # Skip: $reason\n";
 	    exit 0;
         }
     }
@@ -24,6 +32,10 @@ $| = 1;
 
 print "1..8\n";
 
+eval {
+    $SIG{ALRM} = sub { die; };
+    alarm 60;
+};
 
 package Multi;
 require IO::Socket::INET;
@@ -54,8 +66,14 @@ sub connect
 	my($port, $addr) = unpack_sockaddr_in($_[0]);
 	$addr = inet_ntoa($addr);
 	#print "connect($self, $port, $addr)\n";
-	print "ok 3\n" if $addr eq "10.250.230.10";
-	print "ok 4\n" if $addr eq "10.250.230.12";
+	if($addr eq "10.250.230.10") {
+	    print "ok 3\n";
+	    return 0;
+	}
+	if($addr eq "10.250.230.12") {
+	    print "ok 4\n";
+	    return 0;
+	}
     }
     $self->SUPER::connect(@_);
 }

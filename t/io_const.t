@@ -2,17 +2,17 @@
 BEGIN {
     unless(grep /blib/, @INC) {
 	chdir 't' if -d 't';
-	@INC = '../lib' if -d '../lib';
+	@INC = '../lib';
     }
 }
 
 use Config;
 
 BEGIN {
-    if(-d "lib" && -f "TEST") {
-        if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
-	    print "1..0\n";
-	    exit 0;
+    if($ENV{PERL_CORE}) {
+        if ($Config{'extensions'} !~ /\bIO\b/) {
+            print "1..0 # Skip: IO extension not compiled\n";
+            exit 0;
         }
     }
 }

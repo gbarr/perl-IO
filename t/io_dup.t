@@ -3,16 +3,16 @@
 BEGIN {
     unless(grep /blib/, @INC) {
 	chdir 't' if -d 't';
-	@INC = '../lib' if -d '../lib';
+	@INC = '../lib';
     }
 }
 
 use Config;
 
 BEGIN {
-    if(-d "lib" && -f "TEST") {
-        if ($Config{'extensions'} !~ /\bIO\b/ && $^O ne 'VMS') {
-	    print "1..0\n";
+    if($ENV{PERL_CORE}) {
+        if ($Config{'extensions'} !~ /\bIO\b/) {
+	    print "1..0 # Skip: IO extension not compiled\n";
 	    exit 0;
         }
     }
@@ -39,8 +39,16 @@ $stderr->fdopen($stdout,"w");
 
 print $stdout "ok 2\n";
 print $stderr "ok 3\n";
-system 'echo ok 4';
-system 'echo ok 5 1>&2';
+
+# Since some systems don't have echo, we use Perl.
+$echo = qq{$^X -le "print q(ok %d)"};
+
+$cmd = sprintf $echo, 4;
+print `$cmd`;
+
+$cmd = sprintf "$echo 1>&2", 5;
+$cmd = sprintf $echo, 5 if $^O eq 'MacOS';
+print `$cmd`;
 
 $stderr->close;
 $stdout->close;
@@ -48,7 +56,9 @@ $stdout->close;
 $stdout->fdopen($dupout,"w");
 $stderr->fdopen($duperr,"w");
 
-system 'cat Io.dup';
+if ($^O eq 'MSWin32' || $^O eq 'NetWare' || $^O eq 'VMS') { print `type Io.dup` }
+elsif ($^O eq 'MacOS') { system 'Catenate Io.dup' }
+else                   { system 'cat Io.dup' }
 unlink 'Io.dup';
 
 print STDOUT "ok 6\n";

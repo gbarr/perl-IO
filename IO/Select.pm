@@ -7,10 +7,11 @@
 package IO::Select;
 
 use     strict;
+use warnings::register;
 use     vars qw($VERSION @ISA);
 require Exporter;
 
-$VERSION = "1.13";
+$VERSION = "1.17";
 
 @ISA = qw(Exporter); # This is only so we can do version checking
 
@@ -46,13 +47,16 @@ sub remove
 sub exists
 {
  my $vec = shift;
- $vec->[$vec->_fileno(shift) + FIRST_FD];
+ my $fno = $vec->_fileno(shift);
+ return undef unless defined $fno;
+ $vec->[$fno + FIRST_FD];
 }
 
 
 sub _fileno
 {
  my($self, $f) = @_;
+ return unless defined $f;
  $f = $f->[0] if ref($f) eq 'ARRAY';
  ($f =~ /^\d+$/) ? $f : fileno($f);
 }
@@ -127,9 +131,8 @@ sub has_exception
 
 sub has_error
 {
- require Carp;
- Carp::carp("Call to depreciated method 'has_error', use 'has_exception'")
-	if $^W;
+ warnings::warn("Call to deprecated method 'has_error', use 'has_exception'")
+	if warnings::enabled();
  goto &has_exception;
 }
 
@@ -247,13 +250,13 @@ IO::Select - OO interface to the select system call
 
     @ready = $s->can_read($timeout);
 
-    @ready = IO::Select->new(@handles)->read(0);
+    @ready = IO::Select->new(@handles)->can_read(0);
 
 =head1 DESCRIPTION
 
 The C<IO::Select> package implements an object approach to the system C<select>
 function call. It allows the user to see what IO handles, see L<IO::Handle>,
-are ready for reading, writing or have an error condition pending.
+are ready for reading, writing or have an exception pending.
 
 =head1 CONSTRUCTOR
 
@@ -278,7 +281,7 @@ cache which is indexed by the C<fileno> of the handle, so if more than one
 handle with the same C<fileno> is specified then only the last one is cached.
 
 Each handle can be an C<IO::Handle> object, an integer or an array
-reference where the first element is a C<IO::Handle> or an integer.
+reference where the first element is an C<IO::Handle> or an integer.
 
 =item remove ( HANDLES )
 
@@ -298,9 +301,9 @@ Return an array of all registered handles.
 =item can_read ( [ TIMEOUT ] )
 
 Return an array of handles that are ready for reading. C<TIMEOUT> is
-the maximum amount of time to wait before returning an empty list. If
-C<TIMEOUT> is not given and any handles are registered then the call
-will block.
+the maximum amount of time to wait before returning an empty list, in
+seconds, possibly fractional. If C<TIMEOUT> is not given and any
+handles are registered then the call will block.
 
 =item can_write ( [ TIMEOUT ] )
 
@@ -321,16 +324,16 @@ the C<select> static method.
 
 Return the bit string suitable as argument to the core select() call.
 
-=item select ( READ, WRITE, ERROR [, TIMEOUT ] )
+=item select ( READ, WRITE, EXCEPTION [, TIMEOUT ] )
 
-C<select> is a static method, that is you call it with the package
-name like C<new>. C<READ>, C<WRITE> and C<ERROR> are either C<undef>
-or C<IO::Select> objects. C<TIMEOUT> is optional and has the same
-effect as for the core select call.
+C<select> is a static method, that is you call it with the package name
+like C<new>. C<READ>, C<WRITE> and C<EXCEPTION> are either C<undef> or
+C<IO::Select> objects. C<TIMEOUT> is optional and has the same effect as
+for the core select call.
 
 The result will be an array of 3 elements, each a reference to an array
 which will hold the handles that are ready for reading, writing and have
-error conditions respectively. Upon error an empty array is returned.
+exceptions respectively. Upon error an empty list is returned.
 
 =back
 
@@ -345,7 +348,7 @@ listening for more connections on a listen socket
 
     $lsn = new IO::Socket::INET(Listen => 1, LocalPort => 8080);
     $sel = new IO::Select( $lsn );
-    
+
     while(@ready = $sel->can_read) {
         foreach $fh (@ready) {
             if($fh == $lsn) {
@@ -365,7 +368,8 @@ listening for more connections on a listen socket
 
 =head1 AUTHOR
 
-Graham Barr E<lt>F<gbarr@pobox.com>E<gt>
+Graham Barr. Currently maintained by the Perl Porters.  Please report all
+bugs to <perl5-porters@perl.org>.
 
 =head1 COPYRIGHT
 

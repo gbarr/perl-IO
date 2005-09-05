@@ -3,7 +3,7 @@
 BEGIN {
     unless(grep /blib/, @INC) {
 	chdir 't' if -d 't';
-	@INC = '../lib' if -d '../lib';
+	@INC = '../lib';
 	$tell_file = "TEST";
     }
     else {
@@ -27,7 +27,7 @@ print "1..13\n";
 use IO::File;
 
 $tst = IO::File->new("$tell_file","r") || die("Can't open $tell_file");
-
+binmode $tst; # its a nop unless it matters. Was only if ($^O eq 'MSWin32' or $^O eq 'dos');
 if ($tst->eof) { print "not ok 1\n"; } else { print "ok 1\n"; }
 
 $firstline = <$tst>;

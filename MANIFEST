@@ -12,19 +12,26 @@ IO/Socket.pm			(v1.20) Socket handle package
 IO/Socket/INET.pm		(v1.20) INET specific Socket methods
 IO/Socket/UNIX.pm		(v1.20) UNIX specific Socket methods
 MANIFEST
+META.yml                                 Module meta-data (added by MakeMaker)
 Makefile.PL
 README
 poll.c				poll() emulation with select
 poll.h
+t/IO.t
+t/io_const.t
 t/io_dir.t
 t/io_dup.t
+t/io_file.t
+t/io_linenum.t
+t/io_multihomed.t
 t/io_pipe.t
 t/io_poll.t
 t/io_sel.t
 t/io_sock.t
+t/io_taint.t
 t/io_tell.t
 t/io_udp.t
-t/io_xs.t
-t/io_const.t
 t/io_unix.t
-t/io_multihomed.t
+t/io_utf8.t
+t/io_xs.t
+t/test.pl

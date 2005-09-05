@@ -10,11 +10,8 @@
 #ifndef POLL_H
 #  define POLL_H
 
-#if defined(I_POLL) || defined(POLLWRBAND)
+#if (defined(HAS_POLL) && defined(I_POLL)) || defined(POLLWRBAND)
 #  include <poll.h>
-#  ifndef HAS_POLL
-#    define HAS_POLL
-#  endif
 #else
 #ifdef HAS_SELECT
 
@@ -22,6 +19,11 @@
 /* We shall emulate poll using select */
 
 #define EMULATE_POLL_WITH_SELECT
+
+#ifdef poll
+# undef poll
+#endif
+#define poll Perl_my_poll
 
 typedef struct pollfd {
     int fd;
@@ -44,7 +46,7 @@ typedef struct pollfd {
 #define	POLLHUP		0x0010
 #define	POLLNVAL	0x0020
 
-int poll _((struct pollfd *, unsigned long, int));
+int poll (struct pollfd *, unsigned long, int);
 
 #ifndef HAS_POLL
 #  define HAS_POLL
