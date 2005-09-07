@@ -15,7 +15,7 @@ BEGIN {
 use strict;
 use File::Path;
 use File::Spec;
-require "./t/test.pl";
+require($ENV{PERL_CORE} ? "./test.pl" : "./t/test.pl");
 plan(tests => 18);
 
 {

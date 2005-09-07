@@ -8,7 +8,7 @@ BEGIN {
 }
 
 use strict;
-require "./t/test.pl";
+require($ENV{PERL_CORE} ? "./test.pl" : "./t/test.pl");
 plan(tests => ($^O =~ /MSWin32/ ? 9 : 6));
 
 my $Class       = 'IO::File';

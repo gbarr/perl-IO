@@ -1,7 +1,6 @@
 #!./perl
 
 BEGIN {
-    require "./t/test.pl";
     unless(grep /blib/, @INC) {
 	chdir 't' if -d 't';
 	@INC = '../lib';
@@ -12,6 +11,7 @@ BEGIN {
     }
 }
 
+require($ENV{PERL_CORE} ? "./test.pl" : "./t/test.pl");
 
 plan(tests => 5);
 
