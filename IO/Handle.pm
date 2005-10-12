@@ -571,7 +571,7 @@ sub format_write {
     @_ < 3 || croak 'usage: $io->write( [FORMAT_NAME] )';
     if (@_ == 2) {
 	my ($io, $fmt) = @_;
-	my $oldfmt = $io->format_name($fmt);
+	my $oldfmt = $io->format_name(qualify($fmt,caller));
 	CORE::write($io);
 	$io->format_name($oldfmt);
     } else {
