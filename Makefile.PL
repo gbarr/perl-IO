@@ -27,3 +27,22 @@ WriteMakefile(
   INSTALLDIRS  => 'perl',
   ($define ? (DEFINE => $define) : ()),
 );
+
+sub MY::post_constants {
+  return '' if $] >= 5.008;
+
+  return <<'POST_CONST' if $^O eq 'MSWin32';
+
+XSUBPPARGS = $(XSUBPPARGS) -typemap mytypemap
+
+POST_CONST
+
+  return <<'POST_CONST';
+
+XSUBPPARGS +=  -typemap mytypemap
+
+POST_CONST
+
+}
+
+

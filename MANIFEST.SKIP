@@ -1,0 +1,12 @@
+MANIFEST.SKIP
+^\.git/
+.gitignore
+blib\b
+cover_db
+^Makefile$
+^Makefile.old$
+\.bak$
+^IO-\d
+\.bs$
+\.o$
+IO.c
