@@ -1,0 +1,10 @@
+/Makefile
+/Makefile.old
+/blib
+/pm_to_blib
+/*.[co]
+/*.bs
+*.bak
+.*.swp
+IO-[0-9]*
+!/poll.c
