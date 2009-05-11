@@ -13,7 +13,6 @@ lib/IO/Socket/INET.pm		INET specific Socket methods
 lib/IO/Socket/UNIX.pm		UNIX specific Socket methods
 Makefile.PL
 MANIFEST
-mytypemap
 poll.c
 poll.h
 README
