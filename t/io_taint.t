@@ -17,7 +17,12 @@ BEGIN {
 }
 
 use strict;
-require($ENV{PERL_CORE} ? "./test.pl" : "./t/test.pl");
+if ($ENV{PERL_CORE}) {
+  require("./test.pl");
+}
+else {
+  require("./t/test.pl");
+}
 plan(tests => 5);
 
 END { unlink "./__taint__$$" }
