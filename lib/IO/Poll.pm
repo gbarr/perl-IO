@@ -13,7 +13,7 @@ use Exporter ();
 our(@ISA, @EXPORT_OK, @EXPORT, $VERSION);
 
 @ISA = qw(Exporter);
-$VERSION = "0.07";
+$VERSION = "0.08";
 
 @EXPORT = qw( POLLIN
 	      POLLOUT
@@ -83,7 +83,10 @@ sub poll {
 	push(@poll,$fd => $mask);
     }
 
-    my $ret = @poll ? _poll(defined($timeout) ? $timeout * 1000 : -1,@poll) : 0;
+    my $ret =
+      @poll
+      ? _poll(defined($timeout) ? $timeout * 1000 : -1, @poll)
+      : select(undef, undef, undef, defined($timeout) ? $timeout : undef);
 
     return $ret
 	unless $ret > 0;
@@ -172,6 +175,8 @@ event mask value for IO.
 Call the system level poll routine. If TIMEOUT is not specified then the
 call will block. Returns the number of handles which had events
 happen, or -1 on error.
+
+TIMEOUT, if specified, is in seconds, which may be fractional.
 
 =item events ( IO )
 
