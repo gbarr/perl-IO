@@ -396,12 +396,17 @@ Examples:
 
    $sock = IO::Socket::INET->new('127.0.0.1:25');
 
-   $sock = IO::Socket::INET->new(PeerPort  => 9999,
-                                 PeerAddr  => inet_ntoa(INADDR_BROADCAST),
-                                 Proto     => udp,    
+   $sock = IO::Socket::INET->new(Proto     => udp,    
                                  LocalAddr => 'localhost',
                                  Broadcast => 1 ) 
                              or die "Can't bind : $@\n";
+
+To send on a broadcast socket you must use the 3-arg form of send
+
+    use Socket qw(pack_sockaddr_in INADDR_BROADCAST);
+    my $port = 9999;
+    my $bcast_addr = pack_sockaddr_in($port,INADDR_BROADCAST);
+    $sock->send($data, 0, $bcast_addr);
 
  NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
