@@ -43,7 +43,8 @@ eval {
 
 use IO::Socket;
 
-$listen = IO::Socket::INET->new(Listen => 2,
+$listen = IO::Socket::INET->new(LocalAddr => 'localhost',
+				Listen => 2,
 				Proto => 'tcp',
 				# some systems seem to need as much as 10,
 				# so be generous with the timeout
@@ -104,7 +105,7 @@ if($pid = fork()) {
 
 # Test various other ways to create INET sockets that should
 # also work.
-$listen = IO::Socket::INET->new(Listen => '', Timeout => 15) or die "$!";
+$listen = IO::Socket::INET->new(LocalAddr => 'localhost', Listen => '', Timeout => 15) or die "$!";
 $port = $listen->sockport;
 
 if($pid = fork()) {
@@ -231,7 +232,7 @@ if( !open( SRC, "< $0")) {
 ### TEST 16
 ### Start the server
 #
-my $listen = IO::Socket::INET->new( Listen => 2, Proto => 'tcp', Timeout => 15) ||
+my $listen = IO::Socket::INET->new(LocalAddr => 'localhost', Listen => 2, Proto => 'tcp', Timeout => 15) ||
     print "not ";
 print "ok 16\n";
 die if( !defined( $listen));
